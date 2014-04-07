@@ -14,21 +14,18 @@ public class Packet {
 	
 	private InetAddress address = datagram.getAddress();
 	private byte[] data = datagram.getData();
-	private byte[] source = new byte[4];
+	private byte source;
 	private byte[] destination = getDestination().getAddress();
-	private int TTL = (int) data[9];
-	private byte[] dataToSend = new byte[9];
+	private int TTL = (int) data[5];
+	private byte[] dataToSend = new byte[5];
 	
 	public InetAddress getDestination(){
 		return datagram.getAddress();
 	}
 	public void setSource(byte[] data){
-		source[0] = data[0];
-		source[1] = data[1];
-		source[2] = data[2];
-		source[3] = data[3];
+		source = data[0];
 	}
-	public byte[] getSource(){
+	public byte getSource(){
 		this.setSource(data);
 		return source;
 	}
@@ -41,15 +38,12 @@ public class Packet {
 	}
 	
 	public void fillPacket(){
-		dataToSend[0] = source[0];
-		dataToSend[1] = source[1];
-		dataToSend[2] = source[2];
-		dataToSend[3] = source[3];
-		dataToSend[4] = destination[0];
-		dataToSend[5] = destination[1];
-		dataToSend[6] = destination[2];
-		dataToSend[7] = destination[3];
-		dataToSend[8] = (byte) TTL;	
+		dataToSend[0] = source;
+		dataToSend[1] = destination[0];
+		dataToSend[2] = destination[1];
+		dataToSend[3] = destination[2];
+		dataToSend[4] = destination[3];
+		dataToSend[5] = (byte) TTL;	
 	}
 	
 	public byte[] getPacketData(){
@@ -58,7 +52,7 @@ public class Packet {
 	}
 	
 	public DatagramPacket toDatagram(){
-		return new DatagramPacket(this.getPacketData(), 9, address, 2);
+		return new DatagramPacket(this.getPacketData(), 5, address, 2);
 		//TODO decide portnumber
 	}
 

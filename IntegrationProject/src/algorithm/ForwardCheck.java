@@ -5,7 +5,7 @@ import java.util.Observer;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 
-public class RoutingAlgorithm implements Observer{
+public class ForwardCheck implements Observer{
 
 	private Packet packet;
 	private InetAddress destination;
@@ -16,13 +16,13 @@ public class RoutingAlgorithm implements Observer{
 	}
 	
 	public InetAddress getSource(){
-		return this.Address;
+		return ;
 		//TODO make it return own address
 	}
 
 	public void process(){
-		if(packet.getDestination() != this.destination){
-			if(packet.getSource() == ownAddress){
+		if(packet.getDestination() != this.getSource()){
+			if(packet.getSource() == ownAddress[0]){
 				
 			}
 			else if(packet.getTTL() > 0 ){

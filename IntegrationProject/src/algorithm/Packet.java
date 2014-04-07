@@ -13,7 +13,6 @@ public class Packet {
 	private byte source;
 	private byte destination;
 	private int TTL;
-	private byte[] dataToSend = new byte[3];
 	
 	public Packet(DatagramPacket datagram){
 		this.datagram = datagram;
@@ -68,6 +67,13 @@ public class Packet {
 		//TODO decide portnumber
 	}
 
+	public byte[] getResultData(){
+		byte[] resultData = new byte[data.length-3];
+		for(int i = 0; i < data.length-3; i++){
+			resultData[i] = data[i+3];
+		}
+		return resultData;
+	}
 	
 	public void forward(){
 		//TODO datagram.send(this.getDestination());

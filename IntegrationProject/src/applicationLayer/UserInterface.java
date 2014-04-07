@@ -1,8 +1,6 @@
 package applicationLayer;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -12,17 +10,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 
@@ -54,7 +48,7 @@ public class UserInterface implements ActionListener{
 		GridBagConstraints e = new GridBagConstraints();
 		GridBagConstraints f = new GridBagConstraints();
 
-		panel1.setBorder(BorderFactory.createEmptyBorder(25,25,25,25));
+		//panel1.setBorder(BorderFactory.createEmptyBorder(25,25,25,25));
 		d.fill = GridBagConstraints.HORIZONTAL;
 		d.weightx = 1.0;
 		d.weighty = 1.0;
@@ -98,12 +92,17 @@ public class UserInterface implements ActionListener{
 		e.ipadx = 175;
 		e.insets = new Insets(10,10,10,10);
 		Border border3 = new LineBorder(new Color(34,220,214), 10 ,false);
+		
 		button1.setBorder(border3);
 		button1.setFont(new Font("Calibri", Font.ITALIC, 40));
 		button1.setBackground(new Color(255,255,255));
 		button1.setForeground(new Color(34,121,220));
 		button1.setText("Send");
-		panel1.add(button1, e);
+		JScrollPane scrollpane5 = new JScrollPane(button1);
+		JPanel listPane4 = new JPanel();
+		listPane4.setLayout(new BoxLayout(listPane4, BoxLayout.Y_AXIS));
+		listPane4.add(scrollpane5);
+		panel1.add(listPane4,e);
 
 		f.fill = GridBagConstraints.HORIZONTAL;
 		f.weightx = 1.0;
@@ -152,10 +151,7 @@ public class UserInterface implements ActionListener{
 
 
 	public static void main(String[] args) {
-
-
 		UserInterface ui = new UserInterface();
 		ui.createInterface();
-
 	}
 }

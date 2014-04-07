@@ -8,9 +8,9 @@ import java.net.InetAddress;
 public class ForwardCheck implements Observer{
 
 	private Packet packet;
-	private InetAddress destination;
+	private byte destination = packet.getDestination();
 	private byte[] ownAddress = this.getSource().getAddress();
-
+	private byte source = packet.getSource();
 	public void update(Observable client, Object packet) {
 		packet = this.packet;
 	}
@@ -21,8 +21,8 @@ public class ForwardCheck implements Observer{
 	}
 
 	public void process(){
-		if(packet.getDestination() != this.getSource()){
-			if(packet.getSource() == ownAddress[0]){
+		if(destination != ownAddress[0]){
+			if(source == ownAddress[0]){
 				
 			}
 			else if(packet.getTTL() > 0 ){

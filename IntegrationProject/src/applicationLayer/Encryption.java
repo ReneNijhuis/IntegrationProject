@@ -2,7 +2,7 @@ package applicationLayer;
 
 public class Encryption {
 
-	private byte[] key = "vissenkom".getBytes();
+	private byte[] key = "vissenkom".getBytes(); // <-- should be dynamic: based on user input in GUI
 
 	public Encryption (){
 

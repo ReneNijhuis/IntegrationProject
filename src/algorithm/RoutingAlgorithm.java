@@ -5,6 +5,8 @@ import java.util.Observer;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 
+import transportLayer.Packet;
+
 public class RoutingAlgorithm implements Observer{
 
 	private Packet packet;

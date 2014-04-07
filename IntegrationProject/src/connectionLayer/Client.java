@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.Observable;
-import java.util.Observer;
 
-import algorithm.Packet;
+import transportLayer.Packet;
+
 
 
 /**

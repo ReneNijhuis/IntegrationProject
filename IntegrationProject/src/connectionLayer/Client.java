@@ -148,9 +148,4 @@ public class Client extends Observable {
 		setChanged();
 		super.notifyObservers(object);
 	}
-	
-	public static void main(String[] args) {
-		Client client = new Client();
-		client.start();
-	}
 }

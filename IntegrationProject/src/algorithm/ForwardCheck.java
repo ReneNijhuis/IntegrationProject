@@ -16,7 +16,7 @@ public class ForwardCheck implements Observer{
 	}
 	
 	public InetAddress getSource(){
-		return ;
+		return null;
 		//TODO make it return own address
 	}
 

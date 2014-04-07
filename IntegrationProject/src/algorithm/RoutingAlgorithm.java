@@ -9,32 +9,33 @@ public class RoutingAlgorithm implements Observer{
 
 	private Packet packet;
 	private InetAddress destination;
-	private InetAddress source;
+	private byte[] ownAddress = this.getSource().getAddress();
 
 	public void update(Observable client, Object packet) {
 		packet = this.packet;
 	}
+	
+	public InetAddress getSource(){
+		return this.Address;
+		//TODO make it return own address
+	}
 
 	public void process(){
 		if(packet.getDestination() != this.destination){
-			if(packet.getSource() == this.source){
-				packet.drop();
+			if(packet.getSource() == ownAddress){
+				
 			}
-			if(packet.getTTL() > 0 ){
+			else if(packet.getTTL() > 0 ){
 				packet.setTTL(packet.getTTL()-1);
 				packet.forward();
 			}
-			else{
-				packet.drop();
-			}
+			
 		}
 		else{
 			if(packet.getTTL() == 0){
 				packet.accept();
 			}
-			else{
-				packet.drop();
-			}
+			
 		}
 	}
 }

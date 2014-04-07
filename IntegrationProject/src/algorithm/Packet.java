@@ -7,46 +7,60 @@ public class Packet {
 
 	private DatagramPacket datagram;
 	
+	
+	private InetAddress address;
+	private byte[] data;
+	private byte source;
+	private byte destination;
+	private int TTL;
+	private byte[] dataToSend = new byte[3];
+	
 	public Packet(DatagramPacket datagram){
 		this.datagram = datagram;
+		address = datagram.getAddress();
+		data = datagram.getData();
+		source = data[0];
+		destination = address.getAddress()[0];
+		TTL = (int) data[3];
 	}
 	
+	public Packet(byte source, byte destination, byte TTL){
+		this.source = source;
+		this.destination = destination;
+		this.TTL = (int) TTL;
+		data[0] = source;
+		data[1] = destination;
+		data[3] = TTL;
+	}
 	
-	private InetAddress address = datagram.getAddress();
-	private byte[] data = datagram.getData();
-	private byte source;
-	private byte destination = address.getAddress()[0];
-	private int TTL = (int) data[3];
-	private byte[] dataToSend = new byte[3];
 	
 	public byte getDestination(){
 		return destination;
 	}
-	
-	public void setSource(byte[] data){
-		source = data[0];
+
+	public void setDestination(byte destination){
+		this.destination = destination;
 	}
+	
+	public void setSource(byte source){
+		this.source = source;
+	}
+	
 	public byte getSource(){
-		this.setSource(data);
 		return source;
 	}
 	
 	public void setTTL(int TTL){
 		this.TTL = TTL;
 	}
+	
 	public int getTTL(){
 		return TTL;
 	}
 	
-	public void fillPacket(){
-		dataToSend[0] = source;
-		dataToSend[1] = destination;
-		dataToSend[2] = (byte) TTL;	
-	}
-	
 	public byte[] getPacketData(){
-		fillPacket();
-		return dataToSend;
+		data[3] = (byte) TTL;
+		return data;
 	}
 	
 	public DatagramPacket toDatagram(){

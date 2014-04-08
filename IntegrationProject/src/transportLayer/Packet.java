@@ -162,6 +162,24 @@ public class Packet {
 		result[3] = (byte)(intje&0xF000);
 		return result;
 	}
+	
+	@Override
+	public String toString() {	
+		String returner = "--Packet------------------";
+		returner += "Current source: " + source + "\n";
+		returner += "Source: " + source + "\n";
+		returner += "Destination: " + destination + "\n";
+		returner += "Port: " + port + "\n";
+		returner += "TTL: " + TTL + "\n";
+		returner += "Checksum: " + checksum;
+		if (checksum == 0) {
+			returner += " (not yet created)";
+		} 
+		returner += "\n";
+		returner += new String(data) + "\n";
+		returner = "--/Packet------------------";
+		return returner;
+	}
 
 }
 

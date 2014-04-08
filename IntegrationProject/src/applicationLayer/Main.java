@@ -21,4 +21,9 @@ public class Main {
 		PacketRouter router = new PacketRouter(client);
 		router.start();		
 	}
+	
+	public static void main(String[] args) {
+		@SuppressWarnings("unused")
+		Main main = new Main();
+	}
 }

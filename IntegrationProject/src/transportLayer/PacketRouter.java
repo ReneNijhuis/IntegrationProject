@@ -23,11 +23,12 @@ public class PacketRouter extends Observable implements Observer {
 	private ArrayList<ForwardRule> routingTable;
 	
 	public PacketRouter(Client client) {
+		this.client = client;
 		routingTable = new ArrayList<ForwardRule>();
 		try {
 			ownAddress = InetAddress.getLocalHost();
 		} catch (UnknownHostException e) {
-			shutDown(true);
+			shutDown();
 		}	
 	}	
 	
@@ -39,7 +40,7 @@ public class PacketRouter extends Observable implements Observer {
 		} else if (observable.equals(client) && object instanceof String) {
 			String message = (String)object;
 			if (message.equals("SHUTDOWN")) {
-				shutDown(false);
+				shutDown(false, false);
 			}
 		}
 	}
@@ -169,13 +170,20 @@ public class PacketRouter extends Observable implements Observer {
 		client.deleteObserver(this);
 	}
 	
+	private void shutDown() {
+		shutDown(true, false);
+	}
+	
 	/**
 	 * Shuts down router and attached client.
 	 */
-	public void shutDown(boolean selfDestruct) {
+	public void shutDown(boolean selfDestruct, boolean appInit) {
 		client.deleteObserver(this);
-		if (selfDestruct) {
+		if (selfDestruct || appInit) {			
 			client.shutdown();	
+		}
+		if (selfDestruct || !appInit) {
+			notifyObservers("SHUTDOWN");
 		}
 	}
 	

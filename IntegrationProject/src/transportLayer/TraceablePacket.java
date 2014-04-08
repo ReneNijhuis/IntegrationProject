@@ -1,5 +1,7 @@
 package transportLayer;
 
+import tools.ByteUtils;
+
 public class TraceablePacket {
 	
 	private short trackNr;
@@ -33,10 +35,13 @@ public class TraceablePacket {
 	public byte[] toByteArray() {
 		byte[] array = new byte[5 + data.length];
 		
-		array[0] = (byte) (trackNr&0xF0 >>> 8);
-		array[1] = (byte) (trackNr&0x0F);
-		array[2] = (byte) (expectedNr&0xF0 >>> 8);
-		array[3] = (byte) (expectedNr&0x0F);
+		byte[] trackNrBytes = ByteUtils.shortToBytes(trackNr);
+		byte[] expectedNrBytes = ByteUtils.shortToBytes(expectedNr);
+		
+		array[0] = trackNrBytes[0];
+		array[1] = trackNrBytes[1];
+		array[2] = expectedNrBytes[0];
+		array[3] = expectedNrBytes[1];
 		array[4] = flags.toByte();
 		
 		System.arraycopy(data, 0, array, 5, data.length);

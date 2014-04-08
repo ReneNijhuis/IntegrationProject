@@ -1,4 +1,4 @@
-package applicationLayer;
+package encryptionLayer;
 
 public class Encryption {
 

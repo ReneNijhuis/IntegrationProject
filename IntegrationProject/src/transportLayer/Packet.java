@@ -46,6 +46,10 @@ public class Packet {
 		this.data = data;
 	}
 	
+	public InetAddress getCurrentSource() {
+		return currentSource;
+	}
+	
 	public InetAddress getSource(){
 		return source;
 	}

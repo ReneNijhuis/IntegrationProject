@@ -31,7 +31,7 @@ public class Client extends Observable {
 	 */
 	public Client() {
 		try {
-			socket = new MulticastSocket(MULTICAST_PORT);
+			socket = new MulticastSocket(MULTICAST_PORT);//
 		} catch (IOException e) {}
 	}
 	

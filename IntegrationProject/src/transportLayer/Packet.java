@@ -5,6 +5,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import tools.ByteUtils;
+
 /**
  * Abstraction of an Internet Protocol packet.
  * 
@@ -34,7 +36,7 @@ public class Packet {
 			// TODO handle malformed packet 
 		}
 		TTL = (int)0xFF&headers[8];
-		checksum = bytesToInt(Arrays.copyOfRange(datagramData, 9, 11));
+		checksum = ByteUtils.bytesToInt(Arrays.copyOfRange(datagramData, 9, 11));
 		data = Arrays.copyOfRange(datagramData, 11, datagramData.length);
 	}
 	
@@ -109,10 +111,10 @@ public class Packet {
 		sum = intSum1+intSum2;
 		sum = ~sum;
 		
-		byte[] sumBytes = intToBytes(sum);
+		byte[] sumBytes = ByteUtils.intToBytes(sum);
 		byte[] checkSum = new byte[2];
-		checkSum[0] = sumBytes[1];
-		checkSum[1] = sumBytes[0];
+		checkSum[0] = sumBytes[2];
+		checkSum[1] = sumBytes[3];
 		
 		return checkSum;
 	}
@@ -144,27 +146,6 @@ public class Packet {
 		System.arraycopy(data, 0, array, 11, data.length);
 		
 		return array;
-	}
-	
-	private int bytesToInt(byte[] bytes) {
-		if (bytes.length > 4) {
-			// cannot convert to int
-			return -1;
-		}
-		int result = 0;
-		for (int i = 0; i < bytes.length; i++) {
-			result += (int)(bytes[i] << i);	
-		}
-		return result;
-	}
-	
-	private byte[] intToBytes(int intje) {
-		byte[] result = new byte[4];
-		result[0] = (byte)(intje&0x000F);
-		result[1] = (byte)(intje&0x00F0 >> 8);
-		result[2] = (byte)(intje&0x0F00 >> 16);
-		result[3] = (byte)(intje&0xF000 >>> 24);
-		return result;
 	}
 	
 	@Override

@@ -136,7 +136,7 @@ public class Client extends Observable {
 			try {
 				socket.leaveGroup(multicastAddress);
 			} catch (IOException e) {}
-			socket.close();//
+			socket.close();
 		}
 	}
 	

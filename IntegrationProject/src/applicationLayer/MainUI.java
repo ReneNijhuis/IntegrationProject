@@ -151,7 +151,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		Border border4 = new LineBorder(new Color(34,121,220), 6 ,false);
 		textfield1.setBorder(border4);
 		textfield1.setText("Input text here:");
-		MouseAdapter myListener = new MouseAdapter() {//
+		MouseAdapter myListener = new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				textfield1.setText(null);
 				textfield1.removeMouseListener(this);

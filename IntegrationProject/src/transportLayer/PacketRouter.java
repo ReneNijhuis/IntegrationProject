@@ -65,7 +65,7 @@ public class PacketRouter extends Observable implements Observer {
 			return false;
 		} else {
 			// forward packet
-			return client.sendPacket(packet);//
+			return client.sendPacket(packet);
 		}	
 	}
 	

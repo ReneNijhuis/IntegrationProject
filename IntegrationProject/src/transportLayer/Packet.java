@@ -169,8 +169,8 @@ public class Packet {
 	
 	@Override
 	public String toString() {	
-		String returner = "--Packet------------------";
-		returner += "Current source: " + source + "\n";
+		String returner = "--Packet------------------\n";
+		returner += "Current source: " + currentSource + "\n";
 		returner += "Source: " + source + "\n";
 		returner += "Destination: " + destination + "\n";
 		returner += "Port: " + port + "\n";
@@ -180,8 +180,8 @@ public class Packet {
 			returner += " (not yet created)";
 		} 
 		returner += "\n";
-		returner += new String(data) + "\n";
-		returner = "--/Packet------------------";
+		returner += "Data: " + new String(data) + "\n";
+		returner += "--/Packet------------------";
 		return returner;
 	}
 

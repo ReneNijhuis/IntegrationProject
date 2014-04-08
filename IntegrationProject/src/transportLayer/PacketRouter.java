@@ -54,20 +54,31 @@ public class PacketRouter extends Observable implements Observer {
 		InetAddress src = packet.getSource();
 		InetAddress dest = packet.getDestination();
 		int ttl = packet.getTTL();
+		boolean succes = false;
 		
+		System.out.println("--PacketRouter-Send------------------");
+		System.out.print("Action: ");
 		if (ttl == 0) {
 			// drop packet
-			return false;
+			System.err.println("DROP");	
 		} else if (!src.equals(ownAddress)) {
 			// drop packet
-			return false;
+			System.err.println("DROP");	
 		} else if (dest.equals(ownAddress)) {
 			// drop packet
-			return false;
+			System.err.println("DROP");	
 		} else {
 			// forward packet
-			return client.sendPacket(packet);
+			System.err.println("FORWARD");
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				// wait for text to print
+			}
+			succes = client.sendPacket(packet);
 		}	
+		System.out.println("--/PacketRouter-Send------------------");
+		return succes;
 	}
 	
 	private void handlePacket(Packet packet) {
@@ -75,12 +86,18 @@ public class PacketRouter extends Observable implements Observer {
 		InetAddress dest = packet.getDestination();
 		int ttl = packet.getTTL();
 		
+		System.out.println("--PacketRouter-Received------------------");
+		System.out.println(packet.toString());
+		System.out.print("Action: ");
 		if (ttl < 0) {
 			// drop packet
+			System.err.println("DROP");	
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
+			System.err.println("DROP");
 		} else if (packet.getDestination().equals(ownAddress)) {
 			// read packet, not forward
+			System.err.println("READ, NOT FORWARD");
 			notifyObservers(packet);
 		} else {
 			// forward according to routing table
@@ -93,11 +110,13 @@ public class PacketRouter extends Observable implements Observer {
 					}
 				}
 			}	
-		}	
+		}
+		System.out.println("--/PacketRouter-Received------------------");
 	}
 
 	private void handleAction(Packet packet, ForwardAction act) {
 		if (act.equals(ForwardAction.FORWARD_READ)) {
+			System.err.println("READ AND FORWARD");
 			notifyObservers(packet);
 			client.sendPacket(new Packet(
 					ownAddress, 
@@ -106,22 +125,26 @@ public class PacketRouter extends Observable implements Observer {
 					packet.getTTL(), 
 					packet.getPacketData())
 			);
+			
 		} else if (act.equals(ForwardAction.FORWARD_NOT_READ)) {
+			System.err.println("NOT READ, FORWARD");
 			client.sendPacket(new Packet(
 					ownAddress, 
 					packet.getSource(), 
 					packet.getDestination(), 
 					packet.getTTL(), 
 					packet.getPacketData())
-			);
+			);	
 		} else if (act.equals(ForwardAction.NOT_FORWARD_READ)) {
+			System.err.println("READ, NOT FORWARD");
 			notifyObservers(packet);
 		} else if (act.equals(ForwardAction.DROP)) {
 			// drop packet
+			System.err.println("DROP");
 		} else {
 			// drop packet
-		}
-		
+			System.err.println("DROP");
+		}	
 	}
 
 	/**

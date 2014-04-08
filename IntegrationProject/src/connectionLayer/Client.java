@@ -16,7 +16,7 @@ import transportLayer.Packet;
  */
 public class Client extends Observable {
 
-	private static final String MULTICAST_ADDRESS = "226.1.2.3"; 
+	public static final String MULTICAST_ADDRESS = "226.1.2.3"; 
 	private static final int MULTICAST_PORT = 1234;
 	private InetAddress multicastAddress;
 	
@@ -31,7 +31,7 @@ public class Client extends Observable {
 	 */
 	public Client() {
 		try {
-			socket = new MulticastSocket(MULTICAST_PORT);//
+			socket = new MulticastSocket(MULTICAST_PORT);
 		} catch (IOException e) {}
 	}
 	
@@ -70,6 +70,9 @@ public class Client extends Observable {
 						shutdown(true);
 					}
 					Packet received = new Packet(p);
+					System.out.println("--Client-Received------------------");
+					System.out.println(received.toString());
+					System.out.println("--/Client-Received------------------");
 					notifyObservers(received);
 				}
 				
@@ -86,10 +89,15 @@ public class Client extends Observable {
 		try {
 			setTTL(packet.getTTL());
 			socket.send(packet.toDatagram());
+			System.out.println("--Client-Send------------------");
+			System.out.println(packet.toString());
+			
 		} catch (IOException e) {
 			shutdown(true);
+			System.out.println("--/Client-Send------------------");
 			return false;
 		}
+		System.out.println("--/Client-Send------------------");
 		return true;
 	}
 	
@@ -113,6 +121,7 @@ public class Client extends Observable {
 		if (newTTL != TTL) {
 			try {
 				socket.setTimeToLive(newTTL);
+				TTL = newTTL;
 			} catch (IOException e) {
 				shutdown(true);
 				return false;
@@ -145,5 +154,10 @@ public class Client extends Observable {
 	public void notifyObservers(Object object) {
 		setChanged();
 		super.notifyObservers(object);
+	}
+	
+	@Override
+	public String toString() {
+		return "Client - " + socket.toString();
 	}
 }

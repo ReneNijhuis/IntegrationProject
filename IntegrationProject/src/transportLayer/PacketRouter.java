@@ -44,6 +44,31 @@ public class PacketRouter extends Observable implements Observer {
 		}
 	}
 	
+	/**
+	 * Broadcast a packet.
+	 * @param packet to send
+	 * @return whether succesful or not
+	 */
+	public boolean sendPacket(Packet packet) {
+		InetAddress src = packet.getSource();
+		InetAddress dest = packet.getDestination();
+		int ttl = packet.getTTL();
+		
+		if (ttl == 0) {
+			// drop packet
+			return false;
+		} else if (!src.equals(ownAddress)) {
+			// drop packet
+			return false;
+		} else if (dest.equals(ownAddress)) {
+			// drop packet
+			return false;
+		} else {
+			// forward packet
+			return client.sendPacket(packet);
+		}	
+	}
+	
 	private void handlePacket(Packet packet) {
 		InetAddress src = packet.getSource();
 		InetAddress dest = packet.getDestination();

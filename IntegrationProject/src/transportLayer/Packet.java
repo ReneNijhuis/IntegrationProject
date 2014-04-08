@@ -24,7 +24,7 @@ public class Packet {
 	public Packet(DatagramPacket datagram){
 		currentSource = datagram.getAddress();
 		byte[] datagramData = datagram.getData(); // contains our headers
-		byte[] headers = Arrays.copyOfRange(datagramData, 0, 13); //4 bytes src, 4 bytes dest, 1 byte TTL, 4 bytes checksum
+		byte[] headers = Arrays.copyOfRange(datagramData, 0, 11); //4 bytes src, 4 bytes dest, 1 byte TTL, 2 bytes checksum
 		data = Arrays.copyOfRange(datagramData, 13, datagramData.length);	
 		try {
 			source = InetAddress.getByAddress(Arrays.copyOfRange(headers, 0, 4));
@@ -34,8 +34,8 @@ public class Packet {
 			// TODO handle malformed packet 
 		}
 		TTL = (int)0xFF&headers[8];
-		checksum = bytesToInt(Arrays.copyOfRange(datagramData, 9, 13));
-		data = Arrays.copyOfRange(datagramData, 13, datagramData.length);
+		checksum = bytesToInt(Arrays.copyOfRange(datagramData, 9, 11));
+		data = Arrays.copyOfRange(datagramData, 11, datagramData.length);
 	}
 	
 	public Packet(InetAddress currentSource, InetAddress source, InetAddress destination, int TTL, byte[] data){
@@ -83,27 +83,63 @@ public class Packet {
 	}
 	
 	public DatagramPacket toDatagram(){	
-		byte[] datagramData = new byte[data.length + 13];
+		byte[] datagramData = combineToByteArray();
+		
+		//calculate and replace checksum
+		byte[] checkSumBytes = calculateCheckSum(datagramData);
+		System.arraycopy(checkSumBytes, 0, datagramData, 9, checkSumBytes.length);
+		
+		return new DatagramPacket(datagramData, datagramData.length, currentSource, port);
+	}
+
+	private byte[] calculateCheckSum(byte[] bytesToCalulateOver) {
+		int length = bytesToCalulateOver.length;
+		int sum = 0;
+		
+		for (int i = 0; i < length; i += 2) {
+			int data = (((bytesToCalulateOver[i]&0xFF) << 8) & 0xFF00) | (bytesToCalulateOver[i + 1] & 0xFF);
+			sum += data;
+		}
+		int intSum1 = (int) (sum & 0xFFFF);
+		int intSum2 = (int) ((sum >> 16)&0xFFFF);
+		sum = intSum1+intSum2;
+		sum = ~sum;
+		
+		byte[] sumBytes = intToBytes(sum);
+		byte[] checkSum = new byte[2];
+		checkSum[0] = sumBytes[2];
+		checkSum[1] = sumBytes[3];
+		
+		return checkSum;
+	}
+	
+	public boolean correctCheckSum() {
+		byte[] datagramData = combineToByteArray();
+		return correctCheckSum(datagramData);
+	}
+	
+	private boolean correctCheckSum(byte[] allData) {
+		byte[] calculatedCheckSum = calculateCheckSum(allData);
+		return calculatedCheckSum[0] == 0 && calculatedCheckSum[1] == 0;
+	}
+	
+	private byte[] combineToByteArray() {
+		byte[] array = new byte[data.length + 11];
 		
 		// convert variables into byte (arrays)
 		byte[] srcBytes = source.getAddress();
 		byte[] destBytes = destination.getAddress();
 		byte[] ttlByte = new byte[]{(byte)TTL};
-		byte[] checkSumBytes = intToBytes(calculateCheckSum());
+		byte[] checkSumBytes = new byte[] {0,0};
 		
 		// create our header
-		System.arraycopy(srcBytes, 0, datagramData, 0, srcBytes.length);
-		System.arraycopy(destBytes, 0, datagramData, 4, destBytes.length);
-		System.arraycopy(ttlByte, 0, datagramData, 8, 1);
-		System.arraycopy(checkSumBytes, 0, datagramData, 9, checkSumBytes.length);
-		System.arraycopy(data, 0, datagramData, 13, data.length);
+		System.arraycopy(srcBytes, 0, array, 0, srcBytes.length);
+		System.arraycopy(destBytes, 0, array, 4, destBytes.length);
+		System.arraycopy(ttlByte, 0, array, 8, 1);
+		System.arraycopy(checkSumBytes, 0, array, 9, checkSumBytes.length);
+		System.arraycopy(data, 0, array, 11, data.length);
 		
-		return new DatagramPacket(datagramData, datagramData.length, currentSource, port);
-	}
-
-	private int calculateCheckSum() {
-		// TODO René?
-		return 0;
+		return array;
 	}
 	
 	private int bytesToInt(byte[] bytes) {

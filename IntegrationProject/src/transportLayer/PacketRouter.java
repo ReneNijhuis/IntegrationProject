@@ -27,9 +27,8 @@ public class PacketRouter extends Observable implements Observer {
 		try {
 			ownAddress = InetAddress.getLocalHost();
 		} catch (UnknownHostException e) {
-			shutDown();
-		}
-		
+			shutDown(true);
+		}	
 	}	
 	
 	public void update(Observable observable, Object object) {
@@ -37,6 +36,11 @@ public class PacketRouter extends Observable implements Observer {
 			Packet packet = (Packet)object;
 			packet.decrementTTL();
 			handlePacket(packet);
+		} else if (observable.equals(client) && object instanceof String) {
+			String message = (String)object;
+			if (message.equals("SHUTDOWN")) {
+				shutDown(false);
+			}
 		}
 	}
 	
@@ -45,7 +49,7 @@ public class PacketRouter extends Observable implements Observer {
 		InetAddress dest = packet.getDestination();
 		int ttl = packet.getTTL();
 		
-		if (ttl <0) {
+		if (ttl < 0) {
 			// drop packet
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
@@ -62,10 +66,8 @@ public class PacketRouter extends Observable implements Observer {
 						break;
 					}
 				}
-			}
-			
-		}
-		
+			}	
+		}	
 	}
 
 	private void handleAction(Packet packet, ForwardAction act) {
@@ -145,9 +147,11 @@ public class PacketRouter extends Observable implements Observer {
 	/**
 	 * Shuts down router and attached client.
 	 */
-	public void shutDown() {
+	public void shutDown(boolean selfDestruct) {
 		client.deleteObserver(this);
-		client.shutdown();	
+		if (selfDestruct) {
+			client.shutdown();	
+		}
 	}
 	
 	@Override

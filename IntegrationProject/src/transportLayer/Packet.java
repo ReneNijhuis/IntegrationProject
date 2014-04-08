@@ -107,8 +107,8 @@ public class Packet {
 		
 		byte[] sumBytes = intToBytes(sum);
 		byte[] checkSum = new byte[2];
-		checkSum[0] = sumBytes[2];
-		checkSum[1] = sumBytes[3];
+		checkSum[0] = sumBytes[1];
+		checkSum[1] = sumBytes[0];
 		
 		return checkSum;
 	}
@@ -157,9 +157,9 @@ public class Packet {
 	private byte[] intToBytes(int intje) {
 		byte[] result = new byte[4];
 		result[0] = (byte)(intje&0x000F);
-		result[1] = (byte)(intje&0x00F0);
-		result[2] = (byte)(intje&0x0F00);
-		result[3] = (byte)(intje&0xF000);
+		result[1] = (byte)(intje&0x00F0 >> 8);
+		result[2] = (byte)(intje&0x0F00 >> 16);
+		result[3] = (byte)(intje&0xF000 >>> 24);
 		return result;
 	}
 	

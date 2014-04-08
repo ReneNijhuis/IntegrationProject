@@ -9,8 +9,6 @@ import java.util.Observable;
 
 import transportLayer.Packet;
 
-
-
 /**
  * Creates ad-hoc client for sending and receiving packets.
  * 
@@ -132,7 +130,7 @@ public class Client extends Observable {
 	private synchronized void shutdown(boolean selfDestruct) {
 		if (!stop) {
 			if (selfDestruct) {
-				notifyObservers();
+				notifyObservers("SHUTDOWN");
 			}
 			stop = true;
 			try {

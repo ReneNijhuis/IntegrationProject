@@ -36,14 +36,14 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	
 	private boolean sendEnabled = false;
 	
-	private JTextField textfield1 = new JTextField(); //TODO <-- naming should be more clear
-	private JTextField textfield2 = new JTextField();
+	private JTextField textfield1 = new JTextField(); //TODO <-- naming should be more cleartField();
 	private JTextArea textarea1 = new JTextArea();
 	private JTextArea textarea2 = new JTextArea();
 	private JButton button1 = new JButton();
-	private JButton button2 = new JButton();
-	private JFrame frame1 = new JFrame();
-	private JPanel panel1;
+	private JPanel panel1 = new JPanel(new GridBagLayout());
+	
+	private int margin = 10;
+	private Insets insets = new Insets(margin, margin, margin, margin);
 	
 	public MainUI(Main main){
 		super("Chatbox");
@@ -60,83 +60,95 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 
 	public void createInterface(){
 		
-		button1.addActionListener(this);
 		textarea1.setEditable(false);
-		textarea2.setEditable(false);
-		textarea2.append("Connected devices:");
+		textarea2.setEditable(false);		
 
-		panel1 = new JPanel(new GridBagLayout());
-		GridBagConstraints c = new GridBagConstraints(); //TODO <-- naming should be more clear
-		GridBagConstraints d = new GridBagConstraints();
-		GridBagConstraints e = new GridBagConstraints();
-		GridBagConstraints f = new GridBagConstraints();
+		GridBagConstraints con1 = new GridBagConstraints();
+		GridBagConstraints con2 = new GridBagConstraints();
+		GridBagConstraints con3 = new GridBagConstraints();
+		GridBagConstraints con4 = new GridBagConstraints();
+		GridBagConstraints con5 = new GridBagConstraints();
+		
+		con1.fill = GridBagConstraints.HORIZONTAL;
+		con1.gridx = 0;
+		con1.gridy = 1;
+		con1.ipady = 400;
+		con1.ipadx = 172;
 
-		//panel1.setBorder(BorderFactory.createEmptyBorder(25,25,25,25));
-		d.fill = GridBagConstraints.HORIZONTAL;
-		d.weightx = 1.0;
-		d.weighty = 1.0;
-		d.gridx = 0;
-		d.gridy = 0;
-		d.ipady = 500;
-		d.ipadx = 800;
-		d.insets = new Insets(10,10,10,10);
-		Border border1 = new LineBorder(new Color(34,220,214), 10 ,false);
+		con2.fill = GridBagConstraints.HORIZONTAL;
+		con2.weightx = 1.0;
+		con2.weighty = 1.0;
+		con2.gridx = 0;
+		con2.gridy = 0;
+		con2.ipady = 500;
+		con2.ipadx = 800;
+		con2.insets = insets;		
+
+		con3.fill = GridBagConstraints.HORIZONTAL;
+		con3.weightx = 1.0;
+		con3.weighty = 1.0;
+		con3.gridx = 1;
+		con3.gridy = 1;
+		con3.ipady = 172;
+		con3.ipadx = 172;
+		con3.insets = insets;
+
+		con4.fill = GridBagConstraints.HORIZONTAL;
+		con4.weightx = 1.0;
+		con4.weighty = 1.0;
+		con4.gridx = 0;
+		con4.gridy = 1;
+		con4.ipady = 155;
+		con4.ipadx = 800;
+		con4.insets = insets;		
+
+		con5.fill = GridBagConstraints.HORIZONTAL;
+		con5.gridx = 0;
+		con5.gridy = 0;
+		con5.ipady = 53;
+		con5.ipadx = 172;
+		
+
+		Border border1 = new LineBorder(new Color(34,220,214), 6 ,false);
 		textarea1.setBorder(border1);
 		textarea1.setFont(new Font("Calibri", Font.ITALIC, 22));
 		JScrollPane scrollpane = new JScrollPane(textarea1);
 		JPanel listPane1 = new JPanel();
 		listPane1.setLayout(new BoxLayout(listPane1, BoxLayout.LINE_AXIS));
 		listPane1.add(scrollpane);
-		panel1.add(listPane1,d);
+		panel1.add(listPane1,con2);
 
-		c.fill = GridBagConstraints.HORIZONTAL;
-		c.weightx = 1.0;
-		c.weighty = 1.0;
-		c.gridx = 1;
-		c.gridy = 0;
-		c.ipady = 500;
-		c.ipadx = 175;
-		c.insets = new Insets(10,10,10,10);
-		Border border2 = new LineBorder(new Color(34, 121, 220), 10 ,false);
-		textarea2.setBorder(border2);
+		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);
 		textarea2.setFont(new Font("Calibri", Font.ITALIC, 22));
 		JScrollPane scrollpane2 = new JScrollPane(textarea2);
-		JPanel listPane2 = new JPanel();
-		listPane2.setLayout(new BoxLayout(listPane2, BoxLayout.Y_AXIS));
-		listPane2.add(scrollpane2);
-		panel1.add(listPane2,c);
+		JPanel insertpanel = new JPanel();
+		insertpanel.setLayout(new GridBagLayout());
+		JTextArea toparea = new JTextArea();
+		toparea.setFont(new Font("Calibri", Font.ITALIC, 28));
+		toparea.setBackground(new Color(34,121,220));
+		toparea.setForeground(new Color(34,220,214));
+		toparea.setEditable(false);
+		toparea.setText("Connected Devices:");
+		insertpanel.add(toparea,con5);
+		insertpanel.add(scrollpane2,con1);
+		insertpanel.setBorder(border2);
+		panel1.add(insertpanel);		
 
-		e.fill = GridBagConstraints.HORIZONTAL;
-		e.weightx = 1.0;
-		e.weighty = 1.0;
-		e.gridx = 1;
-		e.gridy = 1;
-		e.ipady = 150;
-		e.ipadx = 175;
-		e.insets = new Insets(10,10,10,10);
-		Border border3 = new LineBorder(new Color(34,220,214), 10 ,false);
-		
+		Border border3 = new LineBorder(new Color(34,220,214), 6 ,false);
+		button1.addActionListener(this);
 		button1.setBorder(border3);
-		button1.setFont(new Font("Calibri", Font.ITALIC, 40));
+		button1.setFont(new Font("Calibri", Font.ITALIC, 28));
 		button1.setBackground(new Color(255,255,255));
 		button1.setForeground(new Color(34,121,220));
 		button1.setText("Send");
-		button1.setEnabled(false);
+
 		JScrollPane scrollpane5 = new JScrollPane(button1);
 		JPanel listPane4 = new JPanel();
-		listPane4.setLayout(new BoxLayout(listPane4, BoxLayout.Y_AXIS));
+		listPane4.setLayout(new BoxLayout(listPane4, BoxLayout.PAGE_AXIS));
 		listPane4.add(scrollpane5);
-		panel1.add(listPane4,e);
+		panel1.add(listPane4,con3);
 
-		f.fill = GridBagConstraints.HORIZONTAL;
-		f.weightx = 1.0;
-		f.weighty = 1.0;
-		f.gridx = 0;
-		f.gridy = 1;
-		f.ipady = 150;
-		f.ipadx = 800;
-		f.insets = new Insets(10,10,10,10);
-		Border border4 = new LineBorder(new Color(34,121,220), 10 ,false);
+		Border border4 = new LineBorder(new Color(34,121,220), 6 ,false);
 		textfield1.setBorder(border4);
 		textfield1.setText("Input text here:");
 		MouseAdapter myListener = new MouseAdapter() {
@@ -148,10 +160,11 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		textfield1.addMouseListener(myListener);
 		textfield1.addKeyListener(this);
 		textfield1.setFont(new Font("Calibri", Font.ITALIC, 22));
+
 		JPanel listPane3 = new JPanel();
 		listPane3.setLayout(new BoxLayout(listPane3, BoxLayout.PAGE_AXIS));
 		listPane3.add(textfield1);
-		panel1.add(listPane3,f);
+		panel1.add(listPane3,con4);
 
 		panel1.setBackground(new Color(34,169,220));
 		add(panel1);

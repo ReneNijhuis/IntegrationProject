@@ -53,8 +53,8 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		 * and therefore the main of the whole program.
 		 */	
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setSize(windowSize); 
-		setWindowLocation(); 
+		setSize(windowSize);
+		setWindowLocation();
 		createInterface();
 	}
 
@@ -108,7 +108,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		con5.ipady = 53;
 		con5.ipadx = 172;
 		
-
 		Border border1 = new LineBorder(new Color(34,220,214), 6 ,false);
 		textarea1.setBorder(border1);
 		textarea1.setFont(new Font("Calibri", Font.ITALIC, 22));

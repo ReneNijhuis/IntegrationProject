@@ -31,7 +31,7 @@ public class Client extends Observable {
 	 */
 	public Client() {
 		try {
-			socket = new MulticastSocket(MULTICAST_PORT);
+			socket = new MulticastSocket(MULTICAST_PORT);//
 		} catch (IOException e) {}
 	}
 	
@@ -63,13 +63,14 @@ public class Client extends Observable {
 			@Override
 			public void run() {
 				while (!stop) {
-					DatagramPacket p = null;
+					DatagramPacket p = new DatagramPacket(new byte[0], 0);
 					try {
 						socket.receive(p);
 					} catch (IOException e) {
 						shutdown(true);
 					}
-					notifyObservers(new Packet(p));
+					Packet received = new Packet(p);
+					notifyObservers(received);
 				}
 				
 			}

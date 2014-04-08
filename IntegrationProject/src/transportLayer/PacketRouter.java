@@ -78,6 +78,7 @@ public class PacketRouter extends Observable implements Observer {
 			succes = client.sendPacket(packet);
 		}	
 		System.out.println("--/PacketRouter-Send------------------");
+		System.out.println("");
 		return succes;
 	}
 	
@@ -112,6 +113,7 @@ public class PacketRouter extends Observable implements Observer {
 			}	
 		}
 		System.out.println("--/PacketRouter-Received------------------");
+		System.out.println("");
 	}
 
 	private void handleAction(Packet packet, ForwardAction act) {

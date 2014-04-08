@@ -5,6 +5,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import connectionLayer.Client;
+
 import tools.ByteUtils;
 
 /**
@@ -25,25 +27,32 @@ public class Packet {
 	
 	public Packet(DatagramPacket datagram){
 		currentSource = datagram.getAddress();
-		byte[] datagramData = datagram.getData(); // contains our headers
-		byte[] headers = Arrays.copyOfRange(datagramData, 0, 11); //4 bytes src, 4 bytes dest, 1 byte TTL, 2 bytes checksum
-		data = Arrays.copyOfRange(datagramData, 13, datagramData.length);	
 		try {
+			byte[] datagramData = datagram.getData(); // contains our headers
+			byte[] headers = Arrays.copyOfRange(datagramData, 0, 11); //4 bytes src, 4 bytes dest, 1 byte TTL, 2 bytes checksum
+			data = Arrays.copyOfRange(datagramData, 13, datagramData.length);	
 			source = InetAddress.getByAddress(Arrays.copyOfRange(headers, 0, 4));
 			destination = InetAddress.getByAddress(Arrays.copyOfRange(headers, 4, 8));
 			port = datagram.getPort();
-		} catch (UnknownHostException e) {
+			TTL = (int)0xFF&headers[8];
+			checksum = ByteUtils.bytesToInt(Arrays.copyOfRange(datagramData, 9, 11));
+			data = Arrays.copyOfRange(datagramData, 11, datagramData.length);
+		} catch (UnknownHostException | IllegalArgumentException e) {
 			// TODO handle malformed packet 
+			source = null;
+			destination = null;
+			port = -1;
+			TTL = -1;
+			checksum = -1;
+			data = "NoData".getBytes();
 		}
-		TTL = (int)0xFF&headers[8];
-		checksum = ByteUtils.bytesToInt(Arrays.copyOfRange(datagramData, 9, 11));
-		data = Arrays.copyOfRange(datagramData, 11, datagramData.length);
 	}
 	
 	public Packet(InetAddress currentSource, InetAddress source, InetAddress destination, int TTL, byte[] data){
 		this.currentSource = currentSource;
 		this.source = source;
 		this.destination = destination;
+		this.port = Client.MULTICAST_PORT;
 		this.TTL = TTL;
 		this.data = data;
 	}

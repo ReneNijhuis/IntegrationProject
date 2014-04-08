@@ -17,7 +17,7 @@ import transportLayer.Packet;
 public class Client extends Observable {
 
 	public static final String MULTICAST_ADDRESS = "226.1.2.3"; 
-	private static final int MULTICAST_PORT = 1234;
+	public static final int MULTICAST_PORT = 1234;
 	private InetAddress multicastAddress;
 	
 	private MulticastSocket socket; 
@@ -71,8 +71,6 @@ public class Client extends Observable {
 					}
 					Packet received = new Packet(p);
 					System.out.println("--Client-Received------------------");
-					System.out.println(received.toString());
-					System.out.println("--/Client-Received------------------");
 					notifyObservers(received);
 				}
 				
@@ -90,8 +88,7 @@ public class Client extends Observable {
 			setTTL(packet.getTTL());
 			socket.send(packet.toDatagram());
 			System.out.println("--Client-Send------------------");
-			System.out.println(packet.toString());
-			
+			System.out.println(packet.toString());	
 		} catch (IOException e) {
 			shutdown(true);
 			System.out.println("--/Client-Send------------------");

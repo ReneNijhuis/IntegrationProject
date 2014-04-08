@@ -52,7 +52,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	public void shutDown(boolean selfDestruct, boolean appInit) {
 		router.deleteObserver(this);
 		if (selfDestruct || appInit) {
-			router.shutDown(true);	
+			router.shutDown(selfDestruct, appInit);	
 		}
 		if (selfDestruct || !appInit) {
 			notifyObservers("SHUTDOWN");

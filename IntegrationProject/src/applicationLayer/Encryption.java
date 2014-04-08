@@ -31,32 +31,28 @@ public class Encryption {
 
 	public byte[] encryptByteArray(byte[] plaintext, byte[] key) {
 		byte[] retVal = new byte [plaintext.length];
-		int keySize = key.length;
-
-		for (int i = 0; i < plaintext.length; i = i + keySize) {
-			int end = (i + keySize - 1);
-			if(end > plaintext.length) {
-				end = plaintext.length - 1;
-			}
-			for(int j = i; j <= end; j++) {
-					retVal[j] = (byte) (plaintext[j] ^ key[(j % key.length)]);
-			}
+		for (int i=0; i<plaintext.length; i++){
+			retVal[i] = (byte) (plaintext[i] ^ key[(i % key.length)]);
 		}
 		byte[] ret = new byte[8];
 		for (int x = 0; x < 8; x++){
 			ret[x] = retVal[x];
 		}
-		return retVal;
+		return ret;
 	}
 
 	public byte[] encrypt(byte[] plaintext){
 		byte[][] bit = dividePlainText(plaintext);
 		byte[][] ciphertext = new byte[bit.length][8];
-		byte[] amountpadding = {(byte) (8-(plaintext.length % 8)),0,0,0,0,0,0,0};
+		int amount = (8-(plaintext.length % 8));
+		if (amount == 8){
+			amount = 0;
+		}
+		byte[] amountpadding = {(byte) (amount),0,0,0,0,0,0,0};
 		byte[] invector = iv;
 		for (int i = 0; i < bit.length ; i++){
 			invector = encryptByteArray(key,invector);
-			ciphertext[i] = encryptByteArray(invector,bit[i]);
+			ciphertext[i] = encryptByteArray(bit[i],invector);
 		}
 		byte[][] newbytes = {amountpadding,multiByte(ciphertext)};
 		return multiByte(newbytes);
@@ -75,13 +71,13 @@ public class Encryption {
 	}
 
 	public byte[] removePadding (byte[] paddedbytes, int amountpadding){
-			byte[] paddingremoved = new byte[(paddedbytes.length - amountpadding)];
-			for (int z = 0;  z < (paddedbytes.length - amountpadding); z++){
-				paddingremoved[z] = paddedbytes[z];
-			}
-			return paddingremoved;
+		byte[] paddingremoved = new byte[(paddedbytes.length - amountpadding)];
+		for (int z = 0;  z < (paddedbytes.length - amountpadding); z++){
+			paddingremoved[z] = paddedbytes[z];
+		}
+		return paddingremoved;
 	}
-	
+
 	public byte[] removePaddingAmount(byte[] paddedbytes){
 		byte[] paddingremoved = new byte[(paddedbytes.length - 8)];
 		for (int z = 8;  z < (paddedbytes.length); z++){
@@ -106,7 +102,7 @@ public class Encryption {
 
 	public static void main(String[] args) {
 		Encryption ev = new Encryption();
-		byte[] x = ev.encrypt("hsdafoi".getBytes());
+		byte[] x = ev.encrypt("Hallo ik ben rob".getBytes());
 		System.out.println(new String(x));
 		System.out.println(ev.decrypt(x));
 	}

@@ -16,8 +16,8 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	private short expectedNr;
 		
 	private ArrayList<Byte[]> dataBuffer = new ArrayList<Byte[]>();
-	private LinkedBlockingQueue<TraceablePacket> pendingPackets = new LinkedBlockingQueue<TraceablePacket>();
-	private HashMap<Byte, Integer> pendingTime = new HashMap<Byte, Integer>();
+	private LinkedBlockingQueue<TraceablePacket> pendingPackets = new LinkedBlockingQueue<TraceablePacket>(5);
+	private HashMap<Short, Integer> pendingTime = new HashMap<Short, Integer>();
 	
 	public PacketTracker(PacketRouter router) {
 		this.router = router;
@@ -27,7 +27,6 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	}
 	
 	public void sendData(byte[] dataToSend) {
-		int firstEmptyIndex = -1;
 		
 		
 	}

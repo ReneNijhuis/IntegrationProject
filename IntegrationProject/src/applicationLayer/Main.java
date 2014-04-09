@@ -33,12 +33,21 @@ public class Main implements Observer {
 		InetAddress mulicast = null;
 		try {
 			myIp = InetAddress.getLocalHost();
-			mulicast = InetAddress.getByName(Client.MULTICAST_ADDRESS);
+			mulicast = InetAddress.getByName("192.168.5.2");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		router.sendPacket(new Packet(myIp, myIp, mulicast, 10, "Hoi".getBytes()));
+		Packet test = new Packet(myIp, myIp, mulicast, (short)10, "Hoi7".getBytes());
 		router.addObserver(this);
+		while (true) {
+			router.sendPacket(test);
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 	}
 	
 	public static void main(String[] args) {

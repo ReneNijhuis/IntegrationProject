@@ -92,10 +92,13 @@ public class PacketRouter extends Observable implements Observer {
 		System.out.print("Action: ");
 		if (ttl < 0) {
 			// drop packet
-			System.err.println("DROP");	
+			System.err.println("DROP - TTL");	
+		} else if (!packet.correctCheckSum()) {
+			// drop packet
+			System.err.println("DROP - Checksum");
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
-			System.err.println("DROP");
+			System.err.println("DROP - src");
 		} else if (packet.getDestination().equals(ownAddress)) {
 			// read packet, not forward
 			System.err.println("READ, NOT FORWARD");

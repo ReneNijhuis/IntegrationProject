@@ -31,7 +31,7 @@ public class ByteUtils {
 	}
 	
 	/**
-	 * returns the given short as an array of two bytes. 
+	 * returns the given integer as an array of four bytes. 
 	 * @param i the integer to get the bytes form
 	 */
 	public static byte[] intToBytes(int i) {

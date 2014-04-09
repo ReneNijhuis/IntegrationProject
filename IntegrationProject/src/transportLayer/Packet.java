@@ -17,38 +17,116 @@ import tools.ByteUtils;
  */
 public class Packet {
 
+	private static final int HEADER_LENGTH = 11;
+	
+	// Header format: 4 bytes src, 4 bytes dest, 1 byte TTL, 2 bytes checksum
 	private InetAddress source;        // the creator of this packet
 	private InetAddress destination;   // the intended destination of this packet
 	private int port;				   // destination port
-	private int TTL;				   // max hopcount
+	private short TTL;				   // max hopcount
 	private int checksum;			   // checksum of the headers
 	private byte[] data;			   // actual data
 	private InetAddress currentSource; // the current broadcaster of this packet
 	
-	public Packet(DatagramPacket datagram){
+	private InetAddress defSource = null; 		  // error value
+	private InetAddress defDestination = null;    // error value
+	private int defPort = -1;			          // error value
+	private short defTTL = 256;			          // error value
+	private int defChecksum = 65531;		      // error value
+	private byte[] defData = "NoData".getBytes(); // error value
+	private InetAddress defCurrentSource = null;  // error value
+	
+	public Packet(DatagramPacket datagram) throws MalformedPacketException {
 		currentSource = datagram.getAddress();
+		port = datagram.getPort();
+		byte[] datagramData;
 		try {
-			byte[] datagramData = datagram.getData(); // contains our headers
-			byte[] headers = Arrays.copyOfRange(datagramData, 0, 11); //4 bytes src, 4 bytes dest, 1 byte TTL, 2 bytes checksum
-			data = Arrays.copyOfRange(datagramData, 13, datagramData.length);	
-			source = InetAddress.getByAddress(Arrays.copyOfRange(headers, 0, 4));
-			destination = InetAddress.getByAddress(Arrays.copyOfRange(headers, 4, 8));
-			port = datagram.getPort();
-			TTL = (int)0xFF&headers[8];
-			checksum = ByteUtils.bytesToInt(Arrays.copyOfRange(datagramData, 9, 11));
-			data = Arrays.copyOfRange(datagramData, 11, datagramData.length);
-		} catch (UnknownHostException | IllegalArgumentException e) {
-			// TODO handle malformed packet 
-			source = null;
-			destination = null;
-			port = -1;
-			TTL = -1;
-			checksum = -1;
-			data = "NoData".getBytes();
+			datagramData = datagram.getData(); // contains our headers	
+		} catch (NullPointerException e) {
+			// no headers or data
+			System.err.println("No headers or data found");
+			source = defSource;
+			destination = defDestination;
+			TTL = defTTL;
+			checksum = defChecksum;
+			data = defData;
+			throw new MalformedPacketException("No headers or data found");
 		}
+		try { 
+			source = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 0, 4));
+		} catch (UnknownHostException e) {
+			System.err.println("Malformed 'src'");
+			source = defSource;
+		} catch (ArrayIndexOutOfBoundsException e) {
+			System.err.println("All headers from 'src' missing");
+			source = defSource;
+			destination = defDestination;
+			TTL = defTTL;
+			checksum = defChecksum;
+			data = defData;
+			throw new MalformedPacketException("All headers from 'src' missing");
+		}
+		try { 
+			destination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 4, 8));
+		} catch (UnknownHostException e) {
+			System.err.println("Malformed 'dest'");
+			destination = defDestination;
+		} catch (ArrayIndexOutOfBoundsException e) {
+			System.err.println("All headers from 'dest' missing");
+			destination = defDestination;
+			TTL = defTTL;
+			checksum = defChecksum;
+			data = defData;
+			throw new MalformedPacketException("All headers from 'dest' missing");
+		}
+		try { 
+			TTL = (short)(0xFF&datagramData[8]);
+		} catch (ArrayIndexOutOfBoundsException e) {
+			System.err.println("All headers from 'TTL' missing");
+			TTL = defTTL;
+			checksum = defChecksum;
+			data = defData;
+			throw new MalformedPacketException("All headers from 'TTL' missing");
+		}
+		try { 
+			checksum = ByteUtils.bytesToShort(Arrays.copyOfRange(datagramData, 9, 11));
+		} catch (ArrayIndexOutOfBoundsException e) {
+			System.err.println("All headers from 'checksum' missing");
+			checksum = defChecksum;
+			data = defData;
+			throw new MalformedPacketException("All headers from 'checksum' missing");
+		}	
+		byte[] tempData = Arrays.copyOfRange(datagramData, 11, datagramData.length);
+		int counter = data.length - 1;
+		byte sample = tempData[counter];
+		for (;counter >= 0; counter--) {
+			if (tempData[counter] != sample) {
+				break;
+			}
+		}
+		data = Arrays.copyOfRange(tempData, 0, counter + 1);
+
 	}
 	
-	public Packet(InetAddress currentSource, InetAddress source, InetAddress destination, int TTL, byte[] data){
+	public Packet(InetAddress currentSource, InetAddress source, InetAddress destination, short TTL, byte[] data) throws MalformedPacketException {
+		if (currentSource == null) {
+			throw new MalformedPacketException("No currentSource");
+		}
+		if (source == null) {
+			throw new MalformedPacketException("No source");
+		}
+		if (destination == null) {
+			throw new MalformedPacketException("No destination");
+		}
+		if (port < 1024 || port > 65535) {
+			throw new MalformedPacketException("Wrong port");
+		}
+		if (TTL < 1024 || TTL > 65535) {
+			throw new MalformedPacketException("Wrong TTL");
+		}
+		if (data == null) {
+			throw new MalformedPacketException("No data");
+		}
 		this.currentSource = currentSource;
 		this.source = source;
 		this.destination = destination;
@@ -71,10 +149,12 @@ public class Packet {
 
 	public void setDestination(InetAddress destination){
 		this.destination = destination;
+		updateChecksum();
 	}
 	
 	public void setSource(InetAddress source){
 		this.source = source;
+		updateChecksum();
 	}
 	
 	public int getPort() {
@@ -97,20 +177,37 @@ public class Packet {
 		return data;
 	}
 	
-	public DatagramPacket toDatagram(){	
-		byte[] datagramData = combineToByteArray();
-		
-		//calculate and replace checksum
-		byte[] checkSumBytes = calculateCheckSum(datagramData);
-		System.arraycopy(checkSumBytes, 0, datagramData, 9, checkSumBytes.length);
-		
+	public void setPacketData(byte[] data) {
+		this.data = data;
+		updateChecksum();
+	}
+	
+	public DatagramPacket toDatagram() {
+		byte[] datagramData = updateChecksum();
 		return new DatagramPacket(datagramData, datagramData.length, currentSource, port);
+	}
+	
+	private byte[] updateChecksum() {
+		//create temporary packet
+		byte[] datagramData = combineToByteArray();
+		// calculate checksum
+		byte[] checkSumBytes = calculateCheckSum(datagramData);
+		checksum = ByteUtils.bytesToShort(checkSumBytes);
+		// return datagramData with checksum
+		System.arraycopy(checkSumBytes, 0, datagramData, 9, checkSumBytes.length);
+		return datagramData;
 	}
 
 	private byte[] calculateCheckSum(byte[] bytesToCalulateOver) {
 		int length = bytesToCalulateOver.length;
 		int sum = 0;
-		
+		if (length % 2 != 0) {
+			byte[] tempBytesToCalulateOver = new byte[length + 1];
+			System.arraycopy(bytesToCalulateOver, 0, tempBytesToCalulateOver, 0, length);
+			tempBytesToCalulateOver[length] = 0x00;
+			bytesToCalulateOver = tempBytesToCalulateOver;
+			length++;
+		}
 		for (int i = 0; i < length; i += 2) {
 			int data = (((bytesToCalulateOver[i]&0xFF) << 8) & 0xFF00) | (bytesToCalulateOver[i + 1] & 0xFF);
 			sum += data;

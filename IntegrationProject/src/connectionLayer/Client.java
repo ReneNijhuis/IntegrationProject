@@ -5,8 +5,11 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Observable;
 
+import transportLayer.MalformedPacketException;
 import transportLayer.Packet;
 
 /**
@@ -16,6 +19,8 @@ import transportLayer.Packet;
  */
 public class Client extends Observable {
 
+	public static final int MAX_PACKET_LENGTH = 1024;
+	public static final int MAX_PACKET_TEST_LENGTH = 10;
 	public static final String MULTICAST_ADDRESS = "226.1.2.3"; 
 	public static final int MULTICAST_PORT = 1234;
 	private InetAddress multicastAddress;
@@ -62,18 +67,55 @@ public class Client extends Observable {
 		Thread packetListener = new Thread(new Runnable() {			
 			@Override
 			public void run() {
+				boolean tooLong = false;
+				boolean malformed = false;
 				while (!stop) {
-					DatagramPacket p = new DatagramPacket(new byte[0], 0);
+					malformed = false;
+					DatagramPacket p = new DatagramPacket
+							(
+							new byte[MAX_PACKET_LENGTH + MAX_PACKET_TEST_LENGTH], MAX_PACKET_LENGTH + MAX_PACKET_TEST_LENGTH
+							);
 					try {
 						socket.receive(p);
 					} catch (IOException e) {
 						shutdown(true);
 					}
-					Packet received = new Packet(p);
+					tooLong = testPacketLength(p.getData(), MAX_PACKET_LENGTH);
+					Packet received = null;
+					try {
+						received = new Packet(p);
+					} catch (MalformedPacketException e) {
+						malformed = true;
+					}
 					System.out.println("--Client-Received------------------");
-					notifyObservers(received);
+					if (tooLong) {
+						System.err.println("MALFORMED - LENGTH");
+					} else if (!malformed) {
+						notifyObservers(received);
+					}
+					
 				}
 				
+			}
+
+			/**
+			 * Returns true if packet too long.
+			 * @param data to test
+			 * @param maxPacketLength the maximal length of the packet
+			 */
+			private boolean testPacketLength(byte[] data, int maxPacketLength) {
+				ArrayList<Byte> excessBytes = new ArrayList<Byte>();
+				for (int i = MAX_PACKET_LENGTH + 4; i >= MAX_PACKET_LENGTH; i--) {
+					excessBytes.add(data[i]);
+				}
+				for (byte b1 : excessBytes) {
+					for (byte b2 : excessBytes) {
+						if (b1 != b2) {
+							return true;
+						}
+					}
+				}
+				return false;
 			}
 		});
 		packetListener.start();

@@ -1,13 +1,41 @@
 package encryptionLayer;
 
+/**
+ * The class used for encrypting messages.
+ * @author Wim Florijn
+ * @version 0.1
+ */
+
 public class Encryption {
 
-	private byte[] key = "vissenkom".getBytes();
-	private byte[] iv = "karper".getBytes();
+	private byte[] key;
+	private byte[] iv;
 
+	/**
+	 * The constructor for the OFB encryption class.
+	 */
 	public Encryption (){
+		this("vissenkom".getBytes(), "karper".getBytes());
 	}
-
+	
+	/**
+	 * The constructor for the OFB encryption class.
+	 * @param key the key used for the encryption. This can not be less than 8 bytes.
+	 */	
+	public Encryption (byte[] key){
+		this(key, "karper".getBytes());
+	}
+	
+	/**
+	 * The constructor for the OFB encryption class.
+	 * @param key the key used for the encryption. This can not be less than 8 bytes.
+	 * @param iv the invector used in the encryption
+	 */	
+	public Encryption (byte[] key, byte[] iv){
+		this.key = key;
+		this.iv = iv;
+	}
+	
 	public static byte[][] dividePlainText(byte[] plaintext){
 		int length = plaintext.length;
 		int size = 0;
@@ -100,10 +128,10 @@ public class Encryption {
 		return printshit;
 	}
 
-	public static void main(String[] args) {
+	/*public static void main(String[] args) {
 		Encryption ev = new Encryption();
 		byte[] x = ev.encrypt("Hallo ik ben rob".getBytes());
 		System.out.println(new String(x));
 		System.out.println(ev.decrypt(x));
-	}
+	}*/
 }

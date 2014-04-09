@@ -20,7 +20,7 @@ public class TestingTool {
 	}
 	
 	public TestingTool() {
-		encrypt = new Encryption();
+		encrypt = new Encryption("waterslang".getBytes(), "octopus".getBytes());
 	}
 
 	private void runTest() {
@@ -28,9 +28,9 @@ public class TestingTool {
 		output("Test started");
 		loop:
 		while (true) {
-			String command = input.next().toLowerCase();
+			String command = input.next().toLowerCase().substring(0, 3);
 			switch(command){
-			case "generate":
+			case "gen":
 				String arg = input.next().toLowerCase();
 				switch(arg) {
 					case "short":
@@ -59,11 +59,11 @@ public class TestingTool {
 						break;
 				}
 				break;
-			case "show":
+			case "sho":
 				arg = input.next().toLowerCase();
 				show(arg);
 				break;
-			case "test":
+			case "tes":
 				arg = input.next().toLowerCase();
 				switch(arg) {
 					case "short":
@@ -80,7 +80,7 @@ public class TestingTool {
 						break;
 				}
 				break;
-			case "stop":
+			case "sto":
 				break loop;
 			default:
 				output("what? generate, show, test or stop?");
@@ -244,24 +244,26 @@ public class TestingTool {
 	}
 	
 	private boolean getResults(byte[] ba, int nr) {
-		byte[] encText = null;	//TODO door Wim de encryptie van 'ba'
-		byte[] rebuiltText = null; //TODO door Wim de decryptie van 'encText'
-		if (Arrays.equals(rebuiltText, ba)) {
+		byte[] encText = encrypt.encrypt(ba);
+		byte[] rebuiltText = encrypt.decrypt(encText).getBytes();
+		if (!Arrays.equals(rebuiltText, ba)) {
 			output("-------------------------------------------------");
 			output("Original text" + nr + ": " + textArrayToString(ba));		
 			output("Encryption of text" + nr + ": " + textArrayToString(encText));
 			output("Rebuilt text" + nr + ": " + textArrayToString(rebuiltText));
 			output("-------------------------------------------------");
+			return true;
+		} else {
+			return false;
 		}
-		return false;
 	}
 	
 	private String textArrayToString(byte[] ba) {
-		String result = "{";
+		String result = "\"";
 		for (byte b : ba) {
 			result += (char) b;
 		}
-		result += "}";
+		result += "\"";
 		return result;
 	}
 	

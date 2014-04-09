@@ -86,7 +86,7 @@ public class PacketRouter extends Observable implements Observer {
 		InetAddress dest = packet.getDestination();
 		int ttl = packet.getTTL();
 		
-		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", true, 1);
+		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", true, 1);
 		message += packet.toString();
 		message += PrintUtil.genDataLine("Action: ", 1, false);
 		if (ttl < 0) {
@@ -114,7 +114,7 @@ public class PacketRouter extends Observable implements Observer {
 				}
 			}	
 		}
-		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", false, 1);
+		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", false, 1);
 		PrintUtil.printTextln(message, true, true);
 	}
 

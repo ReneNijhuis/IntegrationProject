@@ -23,7 +23,7 @@ public class Client extends Observable {
 	public static final int MAX_PACKET_LENGTH = 1024;
 	public static final int MAX_PACKET_TEST_LENGTH = 10;
 	public static final String MULTICAST_ADDRESS = "226.1.2.3"; 
-	public static final int MULTICAST_PORT = 1234;
+	public static final int MULTICAST_PORT = 11234;
 	private InetAddress multicastAddress;
 	
 	private MulticastSocket socket; 
@@ -118,7 +118,7 @@ public class Client extends Observable {
 				return false;
 			}
 		});
-		//packetListener.start();
+		packetListener.start();
 	}
 
 	/**

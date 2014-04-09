@@ -252,16 +252,17 @@ public class TestingTool {
 			output("Encryption of text" + nr + ": " + textArrayToString(encText));
 			output("Rebuilt text" + nr + ": " + textArrayToString(rebuiltText));
 			output("-------------------------------------------------");
+			return true;
 		}
 		return false;
 	}
 	
 	private String textArrayToString(byte[] ba) {
-		String result = "{";
+		String result = "\"";
 		for (byte b : ba) {
 			result += (char) b;
 		}
-		result += "}";
+		result += "\"";
 		return result;
 	}
 	

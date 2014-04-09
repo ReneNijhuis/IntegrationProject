@@ -144,6 +144,19 @@ public class Packet {
 		updateChecksum();
 	}
 	
+	public Packet(InetAddress destination, byte[] data) throws MalformedPacketException {
+		try {
+			this.destination = destination;
+			currentSource = InetAddress.getLocalHost();
+			source = InetAddress.getLocalHost();
+		} catch (UnknownHostException e) {
+			// will probably never happen
+		}
+		this.port = Client.MULTICAST_PORT;
+		this.TTL = defTTL;
+		this.data = data;
+	}
+	
 	/**
 	 * Creates an independent copy of the packet.
 	 * @param packet the packet to copy

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Observable;
 
+import tools.PrintUtil;
 import transportLayer.MalformedPacketException;
 import transportLayer.Packet;
 
@@ -87,13 +88,12 @@ public class Client extends Observable {
 					} catch (MalformedPacketException e) {
 						malformed = true;
 					}
-					System.out.println("--Client-Received------------------");
+					PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("Client", "Received", true, 2), true, true);
 					if (tooLong) {
 						System.err.println("MALFORMED - LENGTH");
 					} else if (!malformed) {
 						notifyObservers(received);
-					}
-					
+					}		
 				}
 				
 			}
@@ -129,14 +129,16 @@ public class Client extends Observable {
 		try {
 			setTTL(packet.getTTL());
 			socket.send(packet.toDatagram());
-			System.out.println("--Client-Send------------------");
-			System.out.println(packet.toString());	
+			String message = PrintUtil.START + PrintUtil.genHeader("Client", "Send", true, 2);
+			message += packet.toString();	
+			PrintUtil.printTextln(message, true, true);
+			message = "";
 		} catch (IOException e) {
 			shutdown(true);
-			System.out.println("--/Client-Send------------------");
+			PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("Client", "Send", false, 2), true, true);
 			return false;
 		}
-		System.out.println("--/Client-Send------------------");
+		PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("Client", "Send", false, 2), true, true);
 		return true;
 	}
 	

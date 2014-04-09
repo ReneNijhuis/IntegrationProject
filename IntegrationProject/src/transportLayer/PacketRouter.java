@@ -7,6 +7,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import tools.PrintUtil;
+
 
 import connectionLayer.Client;
 
@@ -56,29 +58,26 @@ public class PacketRouter extends Observable implements Observer {
 		int ttl = packet.getTTL();
 		boolean succes = false;
 		
-		System.out.println("--PacketRouter-Send------------------");
-		System.out.print("Action: ");
+		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", true, 1);
+		message += PrintUtil.genDataLine("Action: ", 1);
+		PrintUtil.printTextln(message, true, true);
+		message = "";
 		if (ttl == 0) {
 			// drop packet
-			System.err.println("DROP");	
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - TTL\n", 1);	
 		} else if (!src.equals(ownAddress)) {
 			// drop packet
-			System.err.println("DROP");	
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - src\n", 1);	
 		} else if (dest.equals(ownAddress)) {
 			// drop packet
-			System.err.println("DROP");	
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - dest\n", 1);
 		} else {
 			// forward packet
-			System.err.println("FORWARD");
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				// wait for text to print
-			}
+			message += PrintUtil.genDataLine(PrintUtil.START + "FORWARD\n", 1);
 			succes = client.sendPacket(packet);
 		}	
-		System.out.println("--/PacketRouter-Send------------------");
-		System.out.println("");
+		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", false, 1);
+		PrintUtil.printTextln(message, true, true);
 		return succes;
 	}
 	
@@ -87,21 +86,23 @@ public class PacketRouter extends Observable implements Observer {
 		InetAddress dest = packet.getDestination();
 		int ttl = packet.getTTL();
 		
-		System.out.println("--PacketRouter-Received------------------");
-		System.out.println(packet.toString());
-		System.out.print("Action: ");
+		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", true, 1);
+		message += packet.toString();
+		message += PrintUtil.genDataLine("Action: ", 1);
+		PrintUtil.printTextln(message, true, true);
+		message = "";
 		if (ttl < 0) {
 			// drop packet
-			System.err.println("DROP - TTL");	
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - TTL", 1);	
 		} else if (!packet.correctCheckSum()) {
 			// drop packet
-			System.err.println("DROP - Checksum");
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - checksum", 1);	
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
-			System.err.println("DROP - src");
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - src", 1);	
 		} else if (packet.getDestination().equals(ownAddress)) {
 			// read packet, not forward
-			System.err.println("READ, NOT FORWARD");
+			message += PrintUtil.genDataLine(PrintUtil.START + "READ, NOT FORWARD", 1);	
 			notifyObservers(packet);
 		} else {
 			// forward according to routing table
@@ -109,34 +110,36 @@ public class PacketRouter extends Observable implements Observer {
 				for (ForwardRule rule : routingTable) {
 					if ((rule.getSrc() == null || src.equals(rule.getSrc())) && 
 							(rule.getDest() == null ||dest.equals(rule.getDest()))) {
-						handleAction(packet, rule.getAct());
+						message += handleAction(packet, rule.getAct());
 						break;
 					}
 				}
 			}	
 		}
-		System.out.println("--/PacketRouter-Received------------------");
-		System.out.println("");
+		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", false, 1);
+		PrintUtil.printTextln(message, true, true);
 	}
 
-	private void handleAction(Packet packet, ForwardAction act) {
+	private String handleAction(Packet packet, ForwardAction act) {
+		String message = "";
 		if (act.equals(ForwardAction.FORWARD_READ)) {
-			System.err.println("READ AND FORWARD");
+			message += PrintUtil.genDataLine(PrintUtil.START + "READ AND FORWARD", 1);
 			notifyObservers(packet);
 			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));		
 		} else if (act.equals(ForwardAction.FORWARD_NOT_READ)) {
-			System.err.println("NOT READ, FORWARD");
+			message += PrintUtil.genDataLine(PrintUtil.START + "NOT READ, FORWARD", 1);
 			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));	
 		} else if (act.equals(ForwardAction.NOT_FORWARD_READ)) {
-			System.err.println("READ, NOT FORWARD");
+			message += PrintUtil.genDataLine(PrintUtil.START + "READ, NOT FORWARD", 1);
 			notifyObservers(packet);
 		} else if (act.equals(ForwardAction.DROP)) {
 			// drop packet
-			System.err.println("DROP");
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - rule", 1);
 		} else {
 			// drop packet
-			System.err.println("DROP");
-		}	
+			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - unknown", 1);
+		}
+		return message;
 	}
 
 	/**

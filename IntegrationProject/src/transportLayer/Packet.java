@@ -8,6 +8,7 @@ import java.util.Arrays;
 import connectionLayer.Client;
 
 import tools.ByteUtils;
+import tools.PrintUtil;
 
 /**
  * Internet Protocol packet.
@@ -46,7 +47,7 @@ public class Packet {
 			datagramData = datagram.getData(); // contains our headers	
 		} catch (NullPointerException e) {
 			// no headers or data
-			System.err.println("No headers or data found");
+			PrintUtil.printTextln("No headers or data found", true);
 			source = errSource;
 			destination = errDestination;
 			TTL = errTTL;
@@ -57,10 +58,10 @@ public class Packet {
 		try { 
 			source = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 0, 4));
 		} catch (UnknownHostException e) {
-			System.err.println("Malformed 'src'");
+			PrintUtil.printTextln("Malformed 'src'", true);
 			source = errSource;
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.println("All headers from 'src' missing");
+			PrintUtil.printTextln("All headers from 'src' missing", true);
 			source = errSource;
 			destination = errDestination;
 			TTL = errTTL;
@@ -71,10 +72,10 @@ public class Packet {
 		try { 
 			destination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 4, 8));
 		} catch (UnknownHostException e) {
-			System.err.println("Malformed 'dest'");
+			PrintUtil.printTextln("Malformed 'dest'", true);
 			destination = errDestination;
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.println("All headers from 'dest' missing");
+			PrintUtil.printTextln("All headers from 'dest' missing", true);
 			destination = errDestination;
 			TTL = errTTL;
 			checksum = errChecksum;
@@ -84,7 +85,7 @@ public class Packet {
 		try { 
 			TTL = (short)(0xFF&datagramData[8]);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.println("All headers from 'TTL' missing");
+			PrintUtil.printTextln("All headers from 'TTL' missing", true);
 			TTL = errTTL;
 			checksum = errChecksum;
 			data = errData;
@@ -93,7 +94,7 @@ public class Packet {
 		try { 
 			checksum = ByteUtils.bytesToShort(Arrays.copyOfRange(datagramData, 9, HEADER_LENGTH));
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.println("All headers from 'checksum' missing");
+			PrintUtil.printTextln("All headers from 'checksum' missing", true);
 			checksum = errChecksum;
 			data = errData;
 			throw new MalformedPacketException("All headers from 'checksum' missing");
@@ -371,19 +372,15 @@ public class Packet {
 	
 	@Override
 	public String toString() {	
-		String returner = "--Packet------------------\n";
-		returner += "Current source: " + currentSource + "\n";
-		returner += "Source: " + source + "\n";
-		returner += "Destination: " + destination + "\n";
-		returner += "Port: " + port + "\n";
-		returner += "TTL: " + TTL + "\n";
-		returner += "Checksum: " + checksum;
-		if (checksum == 0) {
-			returner += " (not yet created)";
-		} 
-		returner += "\n";
-		returner += "Data: " + new String(data) + "\n";
-		returner += "--/Packet------------------";
+		String returner = PrintUtil.START + PrintUtil.genHeader("Packet", "", true, 3);
+		returner += PrintUtil.genDataLine("Current source: " + currentSource, 3);
+		returner += PrintUtil.genDataLine("Source: " + source , 3);
+		returner += PrintUtil.genDataLine("Destination: " + destination, 3);
+		returner += PrintUtil.genDataLine("Port: " + port, 3);
+		returner += PrintUtil.genDataLine("TTL: " + TTL, 3);
+		returner += PrintUtil.genDataLine("Checksum: " + checksum, 3);
+		returner += PrintUtil.genDataLine("Data: " + new String(data), 3);
+		returner += PrintUtil.START + PrintUtil.genHeader("Packet", "", false, 3);
 		return returner;
 	}
 

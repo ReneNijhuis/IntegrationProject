@@ -48,7 +48,7 @@ public class PacketRouter extends Observable implements Observer {
 	}
 	
 	/**
-	 * Broadcast a packet.
+	 * Broadcasts a packet.
 	 * @param packet to send
 	 * @return whether succesful or not
 	 */

@@ -1,5 +1,12 @@
 package encryptionLayer;
 
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 /**
  * The class used for encrypting messages.
  * @author Wim Florijn
@@ -7,6 +14,9 @@ package encryptionLayer;
  */
 
 public class Encryption {
+	
+	public static String SHA_256 = "SHA-256";
+	
 
 	private byte[] key;
 	private byte[] iv;
@@ -126,6 +136,42 @@ public class Encryption {
 			}
 		}
 		return printshit;
+	}
+
+	public static byte[] generateHash(String message, String algorithm) throws NoSuchAlgorithmException {
+		return generateHash(message.getBytes(), algorithm);
+	}
+	
+	public static byte[] generateHash(byte[] message, String algorithm) throws NoSuchAlgorithmException {
+		MessageDigest md = MessageDigest.getInstance(algorithm);
+		md.update(message);
+		return md.digest();
+	}
+	
+	/**
+	 * Secure integrity & avoid replay attacks 
+	 * @param key
+	 * @param message
+	 * @param algoritm
+	 * @return HMAC
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 */
+	public static byte[] generateHMAC(String key, String message, String algoritm) throws NoSuchAlgorithmException, InvalidKeyException {
+		Mac mac = null;
+		try {
+			mac = Mac.getInstance(algoritm);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		byte[] keyBytes = key.getBytes();
+		SecretKeySpec signingKey = new SecretKeySpec(keyBytes, algoritm);
+		try {
+			mac.init(signingKey);
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+		}
+		return mac.doFinal(message.getBytes());
 	}
 
 	/*public static void main(String[] args) {

@@ -26,9 +26,9 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		trackNr = (short) (randomizer.nextInt() >>> 16);
 	}
 	
-	public void sendData(byte[] dataToSend) {
-		
-		
+	public boolean sendData(byte[] dataToSend) {
+		//TODO ?
+		return true;		
 	}
 
 	@Override

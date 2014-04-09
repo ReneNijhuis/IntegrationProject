@@ -13,6 +13,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -32,11 +34,11 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	
-	private Main main;
+	private final Main main;
 	
 	private boolean sendEnabled = false;
 	
-	private JTextField textfield1 = new JTextField(); //TODO <-- naming should be more cleartField();
+	private JTextField textfield1 = new JTextField();
 	private JTextArea textarea1 = new JTextArea();
 	private JTextArea textarea2 = new JTextArea();
 	private JButton button1 = new JButton();
@@ -48,14 +50,18 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	public MainUI(Main main){
 		super("Chatbox");
 		this.main = main;
-		/* REMOVE THIS Added reference to the main class: UserInterface(Main main)
-		 * which is the bridge between the packet routing and this user interface 
-		 * and therefore the main of the whole program.
-		 */	
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				((MainUI) e.getWindow()).main.shutDown(true);
+			}
+			public void windowClosed(WindowEvent e) {
+				System.exit(0);
+			}
+		});
 		setSize(windowSize);
 		setWindowLocation();
 		createInterface();
+		setVisible(false);
 	}
 
 	public void createInterface(){
@@ -168,14 +174,17 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		panel1.setBackground(new Color(34,169,220));
 		add(panel1);
 	}
-
+	
+	public void addMessage(ChatMessage fullMessage) {
+		textarea1.append(fullMessage.toString() + "\n");		
+	}
 	
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		if (arg0.getSource() == button1){
-			String s = textfield1.getText();
-			if (!s.equals("Input text here:") && !s.equals("")){
-				textarea1.append(s + "\n");
+			String message = textfield1.getText();
+			if (!message.equals("Input text here:")){
+				main.sendMessage(message);
 				textfield1.setText("");
 				sendEnabled = false;
 				updateSendButton();
@@ -190,11 +199,12 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			if (e.getSource().equals(textfield1)) {
 				if (c == '\n') {
 					if (sendEnabled) {
-						String s = textfield1.getText();
-						if (!s.equals("Input text here:") && !s.equals("")){
-							textarea1.append(s + "\n");
+						String message = textfield1.getText();
+						if (!message.equals("Input text here:")){
+							main.sendMessage(message);
 							textfield1.setText("");
 							sendEnabled = false;
+							updateSendButton();
 						}
 					}
 				} else {	
@@ -244,11 +254,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		(int)(screenSize.getWidth() / 2 - windowSize.width / 2),
 		(int)(screenSize.getHeight() / 2 - windowSize.height / 2)
 		);
-	}
-
-	public static void main(String[] args) {
-		MainUI ui = new MainUI(null);
-		ui.setVisible(true);
 	}
 	
 }

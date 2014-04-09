@@ -7,12 +7,14 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Observable;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -25,27 +27,36 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-
 public class LoginGUI extends JFrame implements ActionListener, KeyListener {
-	private static final long serialVersionUID = -482499099902918937L;
+	private static final long serialVersionUID = -482910055372612747L;
+	
+	private int windowWidth = 450;
+	private int windowHeight = 150;
+	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
+	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	
 	private static final Insets PADDING = new Insets(10, 10, 10, 10);
-	private Dimension windowSize = new Dimension(450, 150);
 	private JTextField name;
-	private String nameToolTip = "Fill in your username or a new username";
+	private String nameToolTip = "Fill in a username";
 	private JPasswordField password;
-	private String passToolTip = "Fill in your password or a new password";
+	private String passToolTip = "Fill in the group password";
+	
 	private JButton bLogin;
+	
+	private Main main;
+	
 	private boolean nameTyped = false;
 	private boolean passwordTyped = false;
 
 	/** Constructs a LoginGUI object. */
-	public LoginGUI() {
-		super("Login");
+	public LoginGUI(Main main) {
+		this.main = main;
 		buildGUI();
+		setResizable(false);
 		setVisible(true);
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				e.getWindow().dispose();
+				((LoginGUI) e.getWindow()).main.shutDown(true);
 			}
 			public void windowClosed(WindowEvent e) {
 				System.exit(0);
@@ -56,7 +67,7 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	/** builds the GUI. */
 	public void buildGUI() {
 		setSize(windowSize);
-
+		setWindowLocation();
 		// declare and create menu
 		JMenuBar menuBar = new JMenuBar();
 		JMenu optionMenu = new JMenu("Options");
@@ -65,7 +76,7 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				addPopup("Help", 
-						"Fill in a username and password to login.\n", false
+						"Fill in a username and group password to login.\n", false
 						);
 			}
 		});
@@ -77,9 +88,9 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		JPanel fullPanel = new JPanel(new FlowLayout());
 		JPanel panels = new JPanel(new GridBagLayout());
 		//panel1.setBackground(new Color(34,169,220));
-		JPanel panelLabels = new JPanel(new GridLayout(2, 1, 2, 4));
-		JPanel panelFields = new JPanel(new GridLayout(2, 1, 2, 4));
-		JPanel panelButtons = new JPanel(new GridLayout(1, 1, 2, 4));
+		JPanel panelLabels = new JPanel(new GridLayout(2, 0, 2, 4));
+		JPanel panelFields = new JPanel(new GridLayout(2, 0, 2, 4));
+		JPanel panelButtons = new JPanel(new GridLayout(1, 0, 2, 4));
 
 		GridBagConstraints panelLabelsC = new GridBagConstraints(
 				0, 0, 1, 2, 1D, 1D, GridBagConstraints.CENTER, 0, PADDING, 0, 0);
@@ -89,7 +100,7 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 				3, 0, 1, 2, 1D, 1D, GridBagConstraints.CENTER, 0, PADDING, 0, 0);
 
 		JLabel lbName = new JLabel("Username: ");
-		name = new JTextField("", 20);
+		name = new JTextField("",20);
 		name.setToolTipText(nameToolTip);
 		name.addKeyListener(this);
 
@@ -98,7 +109,7 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 
 		// create pass panel
 		JLabel lbPass = new JLabel("Password: ");
-		password = new JPasswordField("", 20);
+		password = new JPasswordField("",20);
 		password.setToolTipText(passToolTip);
 		password.addKeyListener(this);
 
@@ -112,9 +123,10 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		bLogin = new JButton("Login");
 		bLogin.setBackground(Color.WHITE);
 		bLogin.addActionListener(this);
+		bLogin.setEnabled(false);
 		
 		panelButtons.add(bLogin);
-		setResizable(false);
+		
 		panels.add(panelButtons, panelButtonsC);
 		fullPanel.add(panels);
 		add(fullPanel);
@@ -122,11 +134,28 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	}
 
 	public boolean isValidPassword(String s){
-		return true;
+		return s != null && s.length() >= 6 && !s.contains(" ");
 	}
 
-	public boolean tryLogin(String s,String s2){
-		return true;
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		Object src = e.getSource();
+		if (src.equals(bLogin)) {
+			String theName = name.getText();
+			String thePass = new String(password.getPassword());
+			if (isValidPassword(thePass)) {
+				if (main.tryLogin(theName, thePass)) {
+					setVisible(false);
+					reset();
+					main.login();
+				}
+			} else {
+				addPopup("Password error", theName + ", the password is not valid!\n" +
+						"The password should at least consist of 6 characters and " +
+						"should contain no spaces", true);
+			}
+		}
+		
 	}
 	
 	public void reset() {
@@ -145,22 +174,45 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	}
 
 	private void updateFieldBooleans(KeyEvent e, JTextField item) {
-		if (e.getSource() instanceof JPasswordField){
-			
-			passwordTyped = true;
+		String s = item.getText() + e.getKeyChar();
+		boolean validInput = containsLetterOrNumber(s);
+		if (item.equals(name)) {
+			nameTyped = validInput;
+		} else if (item.equals(password)) {
+			passwordTyped = validInput;
 		}
-		else if (e.getSource() instanceof JTextField){
-			nameTyped = true;
-		}
+		
 	}
 
 	private void updateLoginButton() {
 		if (nameTyped && passwordTyped && !bLogin.isEnabled()) {
-			bLogin.setVisible(true);
 			bLogin.setEnabled(true);
 		} else if ((!nameTyped || !passwordTyped) && bLogin.isEnabled()) {
 			bLogin.setEnabled(false);
 		}
+	}
+	
+	private boolean containsLetterOrNumber(String s) {
+		for (char c : s.toCharArray()) {
+			if (isLetterOrNumber(c)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean isLetterOrNumber(char c) {
+		return Character.isLetter(c) || Character.isDigit(c);
+	}
+	
+	/**
+	 * Centers the window on the screen.
+	 */
+	private void setWindowLocation() {
+		setLocation(
+		(int)(screenSize.getWidth() / 2 - windowSize.width / 2),
+		(int)(screenSize.getHeight() / 2 - windowSize.height / 2)
+		);
 	}
 
 
@@ -177,32 +229,6 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
 		}
 
-	}
-	public static void main(String[] args) {
-		LoginGUI gui = new LoginGUI();
-		gui.buildGUI();
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		Object src = e.getSource();
-		System.out.println("working");
-		if (src instanceof JButton) {
-			String theName = name.getText();
-			System.out.println(theName);
-			String thePass = new String(password.getPassword());
-			if (isValidPassword(thePass)) {
-				if (tryLogin(theName, thePass)) {
-					setVisible(false);
-					reset();
-				}
-			} else {
-				addPopup("Password error", theName + ", the password is not valid!\n" +
-						"The password should at least consist of 6 characters and " +
-						"should contain no spaces", true);
-			}
-		}
-		
 	}
 
 }

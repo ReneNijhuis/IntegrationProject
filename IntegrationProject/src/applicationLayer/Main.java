@@ -31,7 +31,7 @@ public class Main implements Observer {
 		router.start();	
 		// send test packet
 		Packet test = Packet.generateTest("Test".getBytes());
-		router.addObserver(this);
+		//router.addObserver(this);
 		for (int i = 0; i < 100; i++) {
 			router.sendPacket(Packet.generateForward(test, ("Test" + i).getBytes()));
 			try {

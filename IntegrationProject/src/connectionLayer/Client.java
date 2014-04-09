@@ -118,7 +118,7 @@ public class Client extends Observable {
 				return false;
 			}
 		});
-		packetListener.start();
+		//packetListener.start();
 	}
 
 	/**

@@ -58,25 +58,25 @@ public class PacketRouter extends Observable implements Observer {
 		int ttl = packet.getTTL();
 		boolean succes = false;
 		
-		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", true, 1);
-		message += PrintUtil.genDataLine("Action: ", 1);
-		PrintUtil.printTextln(message, true, true);
-		message = "";
+		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", true, 1);
+		message += PrintUtil.genDataLine(" Action: ", 1, false);
 		if (ttl == 0) {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - TTL\n", 1);	
+			message += PrintUtil.START + " DROP - TTL\n";	
 		} else if (!src.equals(ownAddress)) {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - src\n", 1);	
+			message += PrintUtil.START + " DROP - src\n";	
 		} else if (dest.equals(ownAddress)) {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - dest\n", 1);
+			message += PrintUtil.START + " DROP - dest\n";
 		} else {
 			// forward packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "FORWARD\n", 1);
+			message += PrintUtil.START + " FORWARD\n";
+			PrintUtil.printTextln(message, true, true);
+			message = "";
 			succes = client.sendPacket(packet);
 		}	
-		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", false, 1);
+		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", false, 1);
 		PrintUtil.printTextln(message, true, true);
 		return succes;
 	}
@@ -88,21 +88,19 @@ public class PacketRouter extends Observable implements Observer {
 		
 		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", true, 1);
 		message += packet.toString();
-		message += PrintUtil.genDataLine("Action: ", 1);
-		PrintUtil.printTextln(message, true, true);
-		message = "";
+		message += PrintUtil.genDataLine("Action: ", 1, false);
 		if (ttl < 0) {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - TTL", 1);	
+			message += PrintUtil.START + "DROP - TTL\n";	
 		} else if (!packet.correctCheckSum()) {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - checksum", 1);	
+			message += PrintUtil.START + "DROP - checksum\n";	
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - src", 1);	
+			message += PrintUtil.START + "DROP - src\n";	
 		} else if (packet.getDestination().equals(ownAddress)) {
 			// read packet, not forward
-			message += PrintUtil.genDataLine(PrintUtil.START + "READ, NOT FORWARD", 1);	
+			message += PrintUtil.START + "READ, NOT FORWARD\n";	
 			notifyObservers(packet);
 		} else {
 			// forward according to routing table
@@ -123,21 +121,21 @@ public class PacketRouter extends Observable implements Observer {
 	private String handleAction(Packet packet, ForwardAction act) {
 		String message = "";
 		if (act.equals(ForwardAction.FORWARD_READ)) {
-			message += PrintUtil.genDataLine(PrintUtil.START + "READ AND FORWARD", 1);
+			message += PrintUtil.START + "READ AND FORWARD\n";
 			notifyObservers(packet);
 			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));		
 		} else if (act.equals(ForwardAction.FORWARD_NOT_READ)) {
-			message += PrintUtil.genDataLine(PrintUtil.START + "NOT READ, FORWARD", 1);
+			message += PrintUtil.START + "NOT READ, FORWARD\n";
 			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));	
 		} else if (act.equals(ForwardAction.NOT_FORWARD_READ)) {
-			message += PrintUtil.genDataLine(PrintUtil.START + "READ, NOT FORWARD", 1);
+			message += PrintUtil.START + "READ, NOT FORWARD\n";
 			notifyObservers(packet);
 		} else if (act.equals(ForwardAction.DROP)) {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - rule", 1);
+			message += PrintUtil.START + "DROP - rule\n";
 		} else {
 			// drop packet
-			message += PrintUtil.genDataLine(PrintUtil.START + "DROP - unknown", 1);
+			message += PrintUtil.START + "DROP - unknown\n";
 		}
 		return message;
 	}

@@ -31,11 +31,9 @@ public class Packet {
 	
 	private static final InetAddress errSource = null; 		  // error value
 	private static final InetAddress errDestination = null;    // error value
-	private static final int errPort = -1;			          // error value
 	private static final short errTTL = 256;			          // error value
 	private static final int errChecksum = 65531;		      // error value
 	private static final byte[] errData = "NoData".getBytes(); // error value
-	private static final InetAddress errCurrentSource = null;  // error value
 	
 	private static final short defTTL = 10;
 	

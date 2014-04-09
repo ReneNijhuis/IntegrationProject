@@ -26,16 +26,19 @@ public class PrintUtil {
 	public synchronized static void printTextln(String text, boolean error, boolean multicolor) {
 		if (multicolor) {
 			Scanner lines = new Scanner(text);
+			lines.useDelimiter("\n");
 			while (lines.hasNextLine()) {
-				Scanner words = new Scanner(lines.nextLine());
+				String line = lines.nextLine();
+				Scanner words = new Scanner(line);
+				words.useDelimiter(" ");
 				while (words.hasNext()) {
 					String word = words.next();
 					if (word.equals(ERR_START)) {
 						while (words.hasNext() && !(word = words.next()).equals(ERR_STOP)) {
-							System.err.print(word);
+							System.err.print(word + " ");
 						}
 					} else {
-						System.out.print(word);
+						System.out.print(word + " ");
 					}
 				}
 				words.close();
@@ -54,16 +57,21 @@ public class PrintUtil {
 		for (int i = 0; i < level; i++) {
 			header += "\t";
 		}
-		header += "+ " + (open ? "" : "/") + source + " - " + state + "\n";	
+		header += "+-- " + (open ? "" : "/") + source + (state != "" ?  (" - " + state) : "") + " --+\n";	
 		return header;	
 	}
+
 	
 	public static String genDataLine(String text, int level) {
+		return genDataLine(text, level, true);
+	}
+	
+	public static String genDataLine(String text, int level, boolean nextLine) {
 		String header = "";
 		for (int i = 0; i < level; i++) {
 			header += "\t";
 		}
-		header += text + "\n";	
+		header += text + (nextLine ? "\n" : "");	
 		return header;	
 	}
  

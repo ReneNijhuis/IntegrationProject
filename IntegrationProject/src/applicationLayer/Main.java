@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.util.Observable;
 import java.util.Observer;
 
+import transportLayer.MalformedPacketException;
 import transportLayer.Packet;
 import transportLayer.PacketRouter;
 import connectionLayer.Client;
@@ -29,18 +30,10 @@ public class Main implements Observer {
 		router = new PacketRouter(client);
 		router.start();	
 		// send test packet
-		InetAddress myIp = null;
-		InetAddress mulicast = null;
-		try {
-			myIp = InetAddress.getLocalHost();
-			mulicast = InetAddress.getByName("192.168.5.2");
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-		Packet test = new Packet(myIp, myIp, mulicast, (short)10, "Hoi7".getBytes());
+		Packet test = Packet.generateTest("Test".getBytes());
 		router.addObserver(this);
-		while (true) {
-			router.sendPacket(test);
+		for (int i = 0; i < 100; i++) {
+			router.sendPacket(Packet.generateForward(test, ("Test" + i).getBytes()));
 			try {
 				Thread.sleep(2000);
 			} catch (InterruptedException e) {

@@ -10,9 +10,9 @@ import connectionLayer.Client;
 import tools.ByteUtils;
 
 /**
- * Abstraction of an Internet Protocol packet.
+ * Internet Protocol packet.
  * 
- * @author Florian Mansvelder en Rob van Emous
+ * @author Rob van Emous and Florian Mansvelder
  *
  */
 public class Packet {
@@ -28,13 +28,15 @@ public class Packet {
 	private byte[] data;			   // actual data
 	private InetAddress currentSource; // the current broadcaster of this packet
 	
-	private InetAddress defSource = null; 		  // error value
-	private InetAddress defDestination = null;    // error value
-	private int defPort = -1;			          // error value
-	private short defTTL = 256;			          // error value
-	private int defChecksum = 65531;		      // error value
-	private byte[] defData = "NoData".getBytes(); // error value
-	private InetAddress defCurrentSource = null;  // error value
+	private static final InetAddress errSource = null; 		  // error value
+	private static final InetAddress errDestination = null;    // error value
+	private static final int errPort = -1;			          // error value
+	private static final short errTTL = 256;			          // error value
+	private static final int errChecksum = 65531;		      // error value
+	private static final byte[] errData = "NoData".getBytes(); // error value
+	private static final InetAddress errCurrentSource = null;  // error value
+	
+	private static final short defTTL = 10;
 	
 	public Packet(DatagramPacket datagram) throws MalformedPacketException {
 		currentSource = datagram.getAddress();
@@ -45,59 +47,59 @@ public class Packet {
 		} catch (NullPointerException e) {
 			// no headers or data
 			System.err.println("No headers or data found");
-			source = defSource;
-			destination = defDestination;
-			TTL = defTTL;
-			checksum = defChecksum;
-			data = defData;
+			source = errSource;
+			destination = errDestination;
+			TTL = errTTL;
+			checksum = errChecksum;
+			data = errData;
 			throw new MalformedPacketException("No headers or data found");
 		}
 		try { 
 			source = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 0, 4));
 		} catch (UnknownHostException e) {
 			System.err.println("Malformed 'src'");
-			source = defSource;
+			source = errSource;
 		} catch (ArrayIndexOutOfBoundsException e) {
 			System.err.println("All headers from 'src' missing");
-			source = defSource;
-			destination = defDestination;
-			TTL = defTTL;
-			checksum = defChecksum;
-			data = defData;
+			source = errSource;
+			destination = errDestination;
+			TTL = errTTL;
+			checksum = errChecksum;
+			data = errData;
 			throw new MalformedPacketException("All headers from 'src' missing");
 		}
 		try { 
 			destination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 4, 8));
 		} catch (UnknownHostException e) {
 			System.err.println("Malformed 'dest'");
-			destination = defDestination;
+			destination = errDestination;
 		} catch (ArrayIndexOutOfBoundsException e) {
 			System.err.println("All headers from 'dest' missing");
-			destination = defDestination;
-			TTL = defTTL;
-			checksum = defChecksum;
-			data = defData;
+			destination = errDestination;
+			TTL = errTTL;
+			checksum = errChecksum;
+			data = errData;
 			throw new MalformedPacketException("All headers from 'dest' missing");
 		}
 		try { 
 			TTL = (short)(0xFF&datagramData[8]);
 		} catch (ArrayIndexOutOfBoundsException e) {
 			System.err.println("All headers from 'TTL' missing");
-			TTL = defTTL;
-			checksum = defChecksum;
-			data = defData;
+			TTL = errTTL;
+			checksum = errChecksum;
+			data = errData;
 			throw new MalformedPacketException("All headers from 'TTL' missing");
 		}
 		try { 
-			checksum = ByteUtils.bytesToShort(Arrays.copyOfRange(datagramData, 9, 11));
+			checksum = ByteUtils.bytesToShort(Arrays.copyOfRange(datagramData, 9, HEADER_LENGTH));
 		} catch (ArrayIndexOutOfBoundsException e) {
 			System.err.println("All headers from 'checksum' missing");
-			checksum = defChecksum;
-			data = defData;
+			checksum = errChecksum;
+			data = errData;
 			throw new MalformedPacketException("All headers from 'checksum' missing");
 		}	
-		byte[] tempData = Arrays.copyOfRange(datagramData, 11, datagramData.length);
-		int counter = data.length - 1;
+		byte[] tempData = Arrays.copyOfRange(datagramData, HEADER_LENGTH, datagramData.length);
+		int counter = tempData.length - 1;
 		byte sample = tempData[counter];
 		for (;counter >= 0; counter--) {
 			if (tempData[counter] != sample) {
@@ -105,27 +107,33 @@ public class Packet {
 			}
 		}
 		data = Arrays.copyOfRange(tempData, 0, counter + 1);
-
 	}
 	
 	public Packet(InetAddress currentSource, InetAddress source, InetAddress destination, short TTL, byte[] data) throws MalformedPacketException {
+		boolean wrongArguments = false;
+		String errorMessage = "";
 		if (currentSource == null) {
-			throw new MalformedPacketException("No currentSource");
+			wrongArguments = true;
+			errorMessage += "No currentSource";
 		}
 		if (source == null) {
-			throw new MalformedPacketException("No source");
+			wrongArguments = true;
+			errorMessage += "No source";
 		}
 		if (destination == null) {
-			throw new MalformedPacketException("No destination");
+			wrongArguments = true;
+			errorMessage += "No destination";
 		}
-		if (port < 1024 || port > 65535) {
-			throw new MalformedPacketException("Wrong port");
-		}
-		if (TTL < 1024 || TTL > 65535) {
-			throw new MalformedPacketException("Wrong TTL");
+		if (TTL < 0 || TTL > 255) {
+			wrongArguments = true;
+			errorMessage += "Wrong TTL";
 		}
 		if (data == null) {
-			throw new MalformedPacketException("No data");
+			wrongArguments = true;
+			errorMessage += "No data";
+		}
+		if (wrongArguments) {
+			throw new MalformedPacketException(errorMessage);
 		}
 		this.currentSource = currentSource;
 		this.source = source;
@@ -133,6 +141,21 @@ public class Packet {
 		this.port = Client.MULTICAST_PORT;
 		this.TTL = TTL;
 		this.data = data;
+		updateChecksum();
+	}
+	
+	/**
+	 * Creates an independent copy of the packet.
+	 * @param packet the packet to copy
+	 */
+	public Packet(Packet packet) {
+		currentSource = packet.getCurrentSource();
+		source = packet.getSource();
+		destination = packet.getDestination();
+		port = packet.getPort();
+		TTL = packet.getTTL();
+		checksum = packet.getChecksum();
+		data = packet.getPacketData();
 	}
 	
 	public InetAddress getCurrentSource() {
@@ -146,27 +169,13 @@ public class Packet {
 	public InetAddress getDestination(){
 		return destination;
 	}
-
-	public void setDestination(InetAddress destination){
-		this.destination = destination;
-		updateChecksum();
-	}
-	
-	public void setSource(InetAddress source){
-		this.source = source;
-		updateChecksum();
-	}
 	
 	public int getPort() {
 		return port;
 	}
 	
-	public int getTTL(){
+	public short getTTL(){
 		return TTL;
-	}
-	
-	public void decrementTTL(){
-		TTL--;
 	}
 	
 	public int getChecksum() {
@@ -177,9 +186,99 @@ public class Packet {
 		return data;
 	}
 	
+	public void setCurrentSource(InetAddress currentSource) {
+		this.currentSource = currentSource;
+		updateChecksum();
+	}
+	
+	public void setSource(InetAddress source){
+		this.source = source;
+		updateChecksum();
+	}
+
+	public void setDestination(InetAddress destination){
+		this.destination = destination;
+		updateChecksum();
+	}
+	
+	public void decrementTTL(){
+		TTL--;
+	}
+	
 	public void setPacketData(byte[] data) {
 		this.data = data;
 		updateChecksum();
+	}
+	
+	/**
+	 * Generates an answer to the provided packet.
+	 * The source and destination will be switched and the currentSource 
+	 * will be set to the IP of this computer.
+	 * @param packet the packet to generate an answer to
+	 * @param data to replace the current data
+	 * @return the answer Packet
+	 */
+	public static Packet generateAnswer(Packet packet, byte[] data) {
+		Packet answer = new Packet(packet);
+		try {
+			answer.setCurrentSource(InetAddress.getLocalHost());
+		} catch (UnknownHostException e) {
+			// will probably never happen
+			return null;
+		}
+		answer.setDestination(packet.getSource());
+		answer.setSource(packet.getDestination());
+		answer.setPacketData(data);
+		return answer;	
+	}
+	
+	/**
+	 * Generates a forward-packet of the provided packet.
+	 * The currentSource will be set to the IP of this computer.
+	 * @param packet the packet to generate an answer to
+	 * @param data to replace the current data
+	 * @return the forward Packet
+	 */
+	public static Packet generateForward(Packet packet, byte[] data) {
+		Packet answer = new Packet(packet);
+		try {
+			answer.setCurrentSource(InetAddress.getLocalHost());
+		} catch (UnknownHostException e) {
+			// will probably never happen
+			return null;
+		}
+		answer.setPacketData(data);
+		return answer;	
+	}
+	
+	/**
+	 * Generates a test-packet.
+	 * The currentSource and source will be set to the IP of this computer.
+	 * The destination and port will be Client.MULTICAST_ADDRESS and 
+	 * Client.MULTICAST_PORT respectively.
+	 * 
+	 * @param data to use
+	 * @return the test Packet
+	 */
+	public static Packet generateTest(byte[] data) {
+		InetAddress currentSource;
+		InetAddress source;
+		InetAddress destination;
+		try {
+			currentSource = InetAddress.getLocalHost();
+			source = InetAddress.getLocalHost();
+			destination = InetAddress.getByName(Client.MULTICAST_ADDRESS);
+		} catch (UnknownHostException e) {
+			// will probably never happen
+			return null;
+		}
+		short TTL = defTTL;
+		try {
+			return new Packet(currentSource, source, destination, TTL, data);
+		} catch (MalformedPacketException e) {
+			// will probably never happen
+			return null;
+		}	
 	}
 	
 	public DatagramPacket toDatagram() {
@@ -190,7 +289,7 @@ public class Packet {
 	private byte[] updateChecksum() {
 		//create temporary packet
 		byte[] datagramData = combineToByteArray();
-		// calculate checksum
+		// calculate and update checksum
 		byte[] checkSumBytes = calculateCheckSum(datagramData);
 		checksum = ByteUtils.bytesToShort(checkSumBytes);
 		// return datagramData with checksum
@@ -225,6 +324,9 @@ public class Packet {
 		return checkSum;
 	}
 	
+	/**
+	 * Returns whether the checksum field in this packet has been set correctly.
+	 */
 	public boolean correctCheckSum() {
 		byte[] datagramData = combineToByteArray();
 		return correctCheckSum(datagramData);

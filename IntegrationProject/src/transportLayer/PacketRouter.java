@@ -123,23 +123,10 @@ public class PacketRouter extends Observable implements Observer {
 		if (act.equals(ForwardAction.FORWARD_READ)) {
 			System.err.println("READ AND FORWARD");
 			notifyObservers(packet);
-			client.sendPacket(new Packet(
-					ownAddress, 
-					packet.getSource(), 
-					packet.getDestination(), 
-					packet.getTTL(), 
-					packet.getPacketData())
-			);
-			
+			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));		
 		} else if (act.equals(ForwardAction.FORWARD_NOT_READ)) {
 			System.err.println("NOT READ, FORWARD");
-			client.sendPacket(new Packet(
-					ownAddress, 
-					packet.getSource(), 
-					packet.getDestination(), 
-					packet.getTTL(), 
-					packet.getPacketData())
-			);	
+			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));	
 		} else if (act.equals(ForwardAction.NOT_FORWARD_READ)) {
 			System.err.println("READ, NOT FORWARD");
 			notifyObservers(packet);

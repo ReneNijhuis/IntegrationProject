@@ -23,7 +23,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	private LinkedBlockingQueue<byte[]> dataBuffer = new LinkedBlockingQueue<byte[]>();
 	private LinkedHashMap<Short, TraceablePacket> pendingPackets = 
 			new LinkedHashMap<Short, TraceablePacket>();
-	private LinkedHashMap<Long, Short> pendingTime = new LinkedHashMap<Long, Short>();
+	private LinkedHashMap<Short, Long> pendingTime = new LinkedHashMap<Short, Long>();
 	private LinkedHashMap<Short, Byte> timesSent = new LinkedHashMap<Short, Byte>();
 	
 	public PacketTracker(PacketRouter router, InetAddress address) {
@@ -39,38 +39,24 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		}
 		//constructing the packet for sending
 		TraceablePacket tp = new  TraceablePacket(trackNr, expectedNr, ControlFlag.ACK, dataToSend);
-		Packet sendablePacket = null;
-		try {
-			sendablePacket = new Packet(connectionAddress, tp.toByteArray());
-		} catch (MalformedPacketException e) {
-			//should never happen but if it does try once more
-			try {
-				sendablePacket = new Packet(connectionAddress, tp.toByteArray());
-			} catch (MalformedPacketException e2) {
-				//if it happens twice something is terribly wrong and the packet can't be sent
-				return false;
-			}
-		}
+		Packet sendablePacket = new Packet(connectionAddress, tp.toByteArray());
 		
+		boolean couldSend = true;
 		//if less than 5 packets are pending, send but not acknowledged, send it else buffer it 
 		if (pendingPackets.keySet().size() < MAX_PENDING_PACKETS){
 			pendingPackets.put(trackNr, tp);
 			timesSent.put(trackNr, (byte) 1);
-			pendingTime.put(System.currentTimeMillis(), trackNr);
-			router.sendPacket(sendablePacket);
-			if (trackNr != Short.MAX_VALUE) {
-				trackNr++;
-			} else {
-				trackNr = Short.MIN_VALUE;
-			}
+			pendingTime.put(trackNr, System.currentTimeMillis());
+			couldSend = router.sendPacket(sendablePacket);
+			trackNr = increaseValue(trackNr);
 		} else {
 			dataBuffer.add(dataToSend);
 			//if the buffer is filling up faster than packets are sent app has to slow down
 			if (dataBuffer.size() > MAX_PENDING_PACKETS * 2) {
-				notifyObservers("SLOWDOWN");
+				notifyObservers("WAIT");
 			}
 		}
-		return true;
+		return couldSend;
 	}
 
 	@Override
@@ -82,21 +68,42 @@ public class PacketTracker extends Observable implements NetworkLayer {
 			Packet packetToHandle = null;
 			packetToHandle = (Packet) object;
 			if (packetToHandle.getSource() == connectionAddress) {
-				handleReceivedPacket(packetToHandle);
+				if (!handleReceivedPacket(packetToHandle)) {
+					shutDown(true, false);
+				}
 			}
 		}
 	}
 
-	private void handleReceivedPacket(Packet packetToHandle) {
+	private boolean handleReceivedPacket(Packet packetToHandle) {
+		boolean couldHandle = true;
+		TraceablePacket tp = new TraceablePacket(packetToHandle);
 		if (!connectionAlive) {
-			
-		}
-		
+			if (tp.getNextExpectedNr() != trackNr && tp.getNextExpectedNr() != -1) {
+				shutDown(true, false);
+			}
+			if (tp.getFlag() == ControlFlag.SYN_ACK) {
+				pendingPackets.remove(trackNr - 1);
+				pendingTime.remove(trackNr - 1);
+				timesSent.remove(trackNr - 1);
+				couldHandle = setupConnection(true, tp);				
+			} else if (tp.getFlag() == ControlFlag.SYN) {
+				couldHandle = setupConnection(false, tp);
+			} else { 
+				endConnection();
+			}
+		} else {
+			//TODO
+		}		
+		return couldHandle;
 	}
-	
+
 	public void shutDown(boolean selfDestruct, boolean appInit) {
 		router.deleteObserver(this);
 		if (selfDestruct || appInit) {
+			if (appInit) {
+				endConnection();
+			}
 			router.shutDown(selfDestruct, appInit);	
 		}
 		if (selfDestruct || !appInit) {
@@ -130,11 +137,84 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		// TODO Auto-generated method stub
 		
 	}
-
+	
 	private boolean setupConnection(boolean selfInitiated) {
-		//TODO
-		
-		return false;
+		return setupConnection(selfInitiated, null);
+	}
+
+	private boolean setupConnection(boolean selfInitiated, TraceablePacket tp) {
+		boolean couldSetup = true;
+		if (selfInitiated) {
+			if (tp == null) {
+				couldSetup = sendSetupPacket();
+			} else {
+				expectedNr = increaseValue(tp.getTrackNr());
+				couldSetup = sendSetupACK();
+				connectionAlive = couldSetup;
+			}
+		} else {
+			expectedNr = increaseValue(tp.getTrackNr());
+			couldSetup = sendSynAck();
+		}
+		return couldSetup;
+	}
+
+	private boolean sendSynAck() {
+		boolean couldSend = true;
+		TraceablePacket synAck = new TraceablePacket(trackNr, expectedNr, ControlFlag.SYN_ACK, new byte[0]);
+		Packet sendablePacket = new Packet(connectionAddress, synAck.toByteArray());
+		pendingPackets.put(trackNr, synAck);
+		timesSent.put(trackNr, (byte) 1);
+		pendingTime.put(trackNr, System.currentTimeMillis());
+		couldSend = router.sendPacket(sendablePacket);
+		trackNr = increaseValue(trackNr);
+		return couldSend;
+	}
+
+	private boolean sendSetupACK() {
+		boolean couldSend = true;
+		TraceablePacket setupACK = new TraceablePacket(trackNr, expectedNr, new byte[0]);
+		Packet sendablePacket = new Packet(connectionAddress, setupACK.toByteArray());
+		pendingPackets.put(trackNr, setupACK);
+		timesSent.put(trackNr, (byte) 1);
+		pendingTime.put(trackNr, System.currentTimeMillis());
+		couldSend = router.sendPacket(sendablePacket);
+		trackNr = increaseValue(trackNr);
+		return couldSend;
+	}
+
+	private boolean sendSetupPacket() {
+		boolean couldSend = true;
+		TraceablePacket synPacket = new TraceablePacket(trackNr, (short)-1, ControlFlag.SYN, new byte[0]);
+		Packet sendablePacket = new Packet(connectionAddress, synPacket.toByteArray());
+		pendingPackets.put(trackNr, synPacket);
+		timesSent.put(trackNr, (byte) 1);
+		pendingTime.put(trackNr, System.currentTimeMillis());
+		couldSend = router.sendPacket(sendablePacket);
+		trackNr = increaseValue(trackNr);
+		return couldSend;
 	}
 	
+	private void endConnection() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	private short increaseValue(short toIncrease) {
+		if (toIncrease != Short.MAX_VALUE) {
+			toIncrease++;
+		} else {
+			toIncrease = Short.MIN_VALUE;
+		}
+		return toIncrease;
+	}
+	
+	private short decreaseValue(short toDecrease) {
+		if (toDecrease != Short.MIN_VALUE) {
+			toDecrease--;
+		} else {
+			toDecrease = Short.MAX_VALUE;
+		}
+		return toDecrease;
+	}
 }

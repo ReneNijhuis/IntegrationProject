@@ -29,10 +29,10 @@ import javax.swing.border.LineBorder;
 public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-- should extend JFrame: easier and more clear implementation
 	private static final long serialVersionUID = 5488009698932086488L;
 	
-	private int windowWidth = 1280;
-	private int windowHeight = 800;
-	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	private int windowWidth = (int)(screenSize.width * 0.75d);
+	private int windowHeight = (int)(windowWidth / 1280 * 800);
+	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
 	
 	private final Main main;
 	

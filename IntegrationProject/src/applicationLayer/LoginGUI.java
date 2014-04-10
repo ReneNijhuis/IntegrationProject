@@ -56,7 +56,7 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		setVisible(true);
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				((LoginGUI) e.getWindow()).main.shutDown(true);
+				e.getWindow().dispose();
 			}
 			public void windowClosed(WindowEvent e) {
 				System.exit(0);

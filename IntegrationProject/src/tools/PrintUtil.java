@@ -35,7 +35,7 @@ public class PrintUtil {
 					String word = words.next();
 					if (word.equals(ERR_START)) {
 						while (words.hasNext() && !(word = words.next()).equals(ERR_STOP)) {
-							System.err.print(word + " ");
+							System.out.print(word + " ");
 						}
 					} else {
 						System.out.print(word + " ");
@@ -46,7 +46,7 @@ public class PrintUtil {
 			}
 			lines.close();
 		} else if (error) {
-			System.err.println(text);
+			System.out.println(text);
 		} else {
 			System.out.println(text);
 		}

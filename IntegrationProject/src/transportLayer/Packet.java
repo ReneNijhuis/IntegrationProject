@@ -377,7 +377,7 @@ public class Packet {
 		// convert variables into byte (arrays)
 		byte[] srcBytes = source.getAddress();
 		byte[] destBytes = destination.getAddress();
-		byte[] ttlByte = new byte[]{(byte)TTL};
+		byte[] ttlByte = addSignAndHash ? new byte[]{(byte)TTL} : new byte[1];
 		byte[] hashBytes = addSignAndHash ? hash : new byte[32];
 		byte[] signBytes = addSignAndHash ? signature : new byte[32];
 		

@@ -80,6 +80,7 @@ public class PacketRouter extends Observable implements Observer {
 			succes = client.sendPacket(packet);
 		}	
 		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", false, 1);
+		message += "\n";
 		PrintUtil.printTextln(message, true, true);
 		return succes;
 	}
@@ -91,7 +92,7 @@ public class PacketRouter extends Observable implements Observer {
 		
 		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", true, 1);
 		message += packet.toString();
-		message += PrintUtil.genDataLine("Action: ", 1, false);
+		message += PrintUtil.genDataLine("Action: ", 1, false);//
 		if (ttl < 0) {
 			// drop packet
 			message += PrintUtil.START + "DROP - TTL\n";	
@@ -118,6 +119,7 @@ public class PacketRouter extends Observable implements Observer {
 			}	
 		}
 		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", false, 1);
+		message += "\n";
 		PrintUtil.printTextln(message, true, true);
 	}
 

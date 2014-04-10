@@ -47,8 +47,9 @@ public class Main implements Observer {
 	public boolean sendMessage(String message) {
 		ChatMessage fullMessage = new ChatMessage(name, message);
 		mainUI.addMessage(fullMessage);
-		//return tcp.sendData(encryptor.encrypt(fullMessage.toString().getBytes()));	
-		return router.sendPacket(Packet.generateTest(encryptor.encrypt(fullMessage.toString().getBytes())));	
+		//return tcp.sendData(encryptor.encrypt(fullMessage.toString().getBytes()));
+		byte[] cipherText = encryptor.encrypt(fullMessage.toString().getBytes());
+		return router.sendPacket(Packet.generateTest(cipherText));	
 	}
 	
 	public static void main(String[] args) {
@@ -101,6 +102,7 @@ public class Main implements Observer {
 		client.start();
 		// start packet-router
 		router = new PacketRouter(client, this.pass);
+		router.addObserver(this);
 		router.start();	
 		// start Packet-tracker (our kind of TCP)
 		//TODO tcp = new PacketTracker(router);

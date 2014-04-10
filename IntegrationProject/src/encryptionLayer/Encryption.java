@@ -16,7 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class Encryption {
 	
 	public static String SHA_256 = "SHA-256";
-	public static final String HMAC_ALGORITHM = "HmacSHA1";
+	public static final String HMAC_ALGORITHM = "HmacSHA256";
 	
 
 	private byte[] key;

@@ -63,11 +63,9 @@ public class ByteUtils {
 	 */
 	public static boolean compare(byte[] bs1, byte[] bs2) {
 		boolean equal = true;
-		for (byte b1 : bs1) {
-			for (byte b2 : bs2) {
-				if (b1 != b2) {
-					equal = false;
-				}
+		for (int i = 0; i < bs1.length; i++) {
+			if (bs1[i] != bs2[i]) {
+				equal = false;
 			}
 		}
 		return equal;

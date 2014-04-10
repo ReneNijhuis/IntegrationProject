@@ -2,8 +2,10 @@ package connectionLayer;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +20,7 @@ import transportLayer.Packet;
  * 
  * @author Rob 
  */
-public class Client extends Observable {
+public class InternetProtocol extends Observable {
 
 	public static final int MAX_PACKET_LENGTH = 1024;
 	public static final int MAX_PACKET_TEST_LENGTH = 10;
@@ -27,6 +29,7 @@ public class Client extends Observable {
 	private InetAddress multicastAddress;
 	
 	private MulticastSocket socket; 
+	private DatagramSocket sendSocket;
 	private int TTL;
 	
 	private boolean stop = false;
@@ -35,9 +38,10 @@ public class Client extends Observable {
 	 * Creates ad-hoc client.<br>
 	 * Must invoke <code>client.start()</code> to join network. 
 	 */
-	public Client() {
+	public InternetProtocol() {
 		try {
 			socket = new MulticastSocket(MULTICAST_PORT);
+			sendSocket = new DatagramSocket();
 		} catch (IOException e) {}
 	}
 	
@@ -88,7 +92,7 @@ public class Client extends Observable {
 					} catch (MalformedPacketException e) {
 						malformed = true;
 					}
-					PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("Client", "Received", true, 2), true, true);
+					PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("InternetProtocol", "received", true, 2), true, true);
 					if (tooLong) {
 						System.err.println("MALFORMED - LENGTH");
 					} else if (!malformed) {
@@ -128,17 +132,17 @@ public class Client extends Observable {
 	public boolean sendPacket(Packet packet) {
 		try {
 			setTTL(packet.getTTL());
-			socket.send(packet.toDatagram());
-			String message = PrintUtil.START + PrintUtil.genHeader("Client", "Send", true, 2);
+			sendSocket.send(packet.toDatagram());
+			String message = PrintUtil.START + PrintUtil.genHeader("InternetProtocol", "send", true, 2);
 			message += packet.toString();	
 			PrintUtil.printTextln(message, true, true);
 			message = "";
 		} catch (IOException e) {
 			shutdown(true);
-			PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("Client", "Send", false, 2), true, true);
+			PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("InternetProtocol", "send", false, 2), true, true);
 			return false;
 		}
-		PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("Client", "Send", false, 2), true, true);
+		PrintUtil.printTextln(PrintUtil.START + PrintUtil.genHeader("InternetProtocol", "send", false, 2), true, true);
 		return true;
 	}
 	
@@ -199,6 +203,6 @@ public class Client extends Observable {
 	
 	@Override
 	public String toString() {
-		return "Client - " + socket.toString();
+		return "InternetProtocol - " + socket.toString();
 	}
 }

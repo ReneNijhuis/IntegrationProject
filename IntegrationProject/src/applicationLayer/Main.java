@@ -11,7 +11,7 @@ import transportLayer.MalformedPacketException;
 import transportLayer.Packet;
 import transportLayer.PacketRouter;
 import transportLayer.PacketTracker;
-import connectionLayer.Client;
+import connectionLayer.InternetProtocol;
 import encryptionLayer.Encryption;
 
 /**
@@ -49,7 +49,7 @@ public class Main implements Observer {
 		mainUI.addMessage(fullMessage);
 		//return tcp.sendData(encryptor.encrypt(fullMessage.toString().getBytes()));
 		byte[] cipherText = encryptor.encrypt(fullMessage.toString().getBytes());
-		return router.sendPacket(Packet.generateTest(cipherText));	
+		return router.sendPacket(Packet.generatePacket(cipherText));	
 	}
 	
 	public static void main(String[] args) {
@@ -98,7 +98,7 @@ public class Main implements Observer {
 		// create encryptor
 		encryptor = new Encryption(this.pass, iv);
 		// start Ad-Hoc-client
-		Client client = new Client();
+		InternetProtocol client = new InternetProtocol();
 		client.start();
 		// start packet-router
 		router = new PacketRouter(client, this.pass);

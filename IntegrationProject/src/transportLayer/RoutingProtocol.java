@@ -9,41 +9,46 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
-public class RoutingProtocol implements Observer, Runnable{
+import applicationLayer.Main;
+
+public class RoutingProtocol implements Observer, Runnable {
+	
+	public static final int HEARTBEAT_INTERVAL = 100; //ms
+	
 	private Map<String, Integer> hopsPerNode = new HashMap<String, Integer>();
-	private Map<String,Long> directLinks = new HashMap<String,Long>();
+	private Map<String, Long> directLinks = new HashMap<String, Long>();
 	private List<String> inetaddresses = new ArrayList<String>();
 	private byte[] HBData;
 	private byte[] MapData;
 	private Map<Integer, Integer> receivedHopsPerNode = new HashMap<Integer, Integer>();
-	InetAddress broad;
 	private byte[] receivedData;
 	private boolean updatereceived = false;
+	
+	private Main main;
 	private PacketRouter router;
-	public RoutingProtocol(PacketRouter router){
+	
+	private boolean stop = false;
+	
+	public RoutingProtocol(Main main, PacketRouter router) {
+		this.main = main;
 		this.router = router;
-		try {
-			broad = InetAddress.getByName("226.1.2.3");
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
 	}
 
-	public void fillHB(){
+	public void fillHB() {
 		String string = "Kaviaar";
 		HBData = string.getBytes();
 	}
 
 	public void heartBeat() {
 		fillHB();
-		router.sendPacket(Packet.generateTest(HBData));
+		router.sendPacket(Packet.generatePacket(HBData));
 	}
 
 	public void SendMap(){
 		fillHopsPerNode();
 		updateHopsPerNode();
 		fillMap();
-		router.sendPacket(Packet.generateTest(MapData));
+		router.sendPacket(Packet.generatePacket(MapData));
 	}
 
 	public void updateHopsPerNode(){
@@ -91,11 +96,10 @@ public class RoutingProtocol implements Observer, Runnable{
 		}
 	}
 
-
 	public void update(Observable observable, Object object) {
 		if (observable instanceof PacketRouter && object instanceof Packet) {
 			Packet packet = (Packet)object;
-			packet.decrementTTL();
+			packet.decrementTTL(); 
 			if(new String(packet.getPacketData()).contains("Kaviaar")){
 				if (!inetaddresses.contains(packet.getCurrentSource().toString())){
 					inetaddresses.add(packet.getCurrentSource().toString());
@@ -112,6 +116,11 @@ public class RoutingProtocol implements Observer, Runnable{
 				receivedData = packet.getPacketData();
 				receivedHopsPerNode = byteToMap(receivedData);
 				updatereceived = true;
+			}
+		} else if (observable instanceof PacketRouter && object instanceof String) {
+			String message = (String)object;
+			if (message.equals("SHUTDOWN")) {
+				shutDown();
 			}
 		}
 	}
@@ -141,7 +150,7 @@ public class RoutingProtocol implements Observer, Runnable{
 
 	@Override
 	public void run() {
-		while (true){
+		while (!stop){
 			heartBeat();
 			if (updatereceived){
 				updateHopsPerNode();
@@ -150,8 +159,18 @@ public class RoutingProtocol implements Observer, Runnable{
 			}
 			deleteHost();
 			try {
-				Thread.sleep(100);
+				Thread.sleep(HEARTBEAT_INTERVAL);
 			} catch (InterruptedException e) {}
 		}
+	}
+	
+	/**
+	 * Shuts down routing protocol and optionally all lower layers.
+	 */
+	public void shutDown() {
+		if (!stop) {
+			stop = true;		
+		} 
+		router.deleteObserver(this);
 	}
 }

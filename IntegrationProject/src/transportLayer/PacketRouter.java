@@ -10,22 +10,22 @@ import java.net.UnknownHostException;
 import tools.PrintUtil;
 
 
-import connectionLayer.Client;
+import connectionLayer.InternetProtocol;
 
 /**
  * Routes and/or reads incoming packets based on routing rules.
  * 
- * @author Florian Mansvelder en Rob van Emous
+ * @author Rob van Emous en Florian Mansvelder
  */
-public class PacketRouter extends Observable implements Observer {
+public class PacketRouter extends Observable implements Observer, NetworkLayer {
 
-	private Client client;
+	private InternetProtocol client;
 	private InetAddress ownAddress;	
 	private byte[] key; // used for signing packets
 	
 	private ArrayList<ForwardRule> routingTable;
 	
-	public PacketRouter(Client client, byte[] key) {
+	public PacketRouter(InternetProtocol client, byte[] key) {
 		this.client = client;
 		this.key = key;
 		routingTable = new ArrayList<ForwardRule>();
@@ -90,7 +90,7 @@ public class PacketRouter extends Observable implements Observer {
 		InetAddress dest = packet.getDestination();
 		int ttl = packet.getTTL();
 		
-		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", true, 1);
+		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "received", true, 1);
 		message += packet.toString();
 		message += PrintUtil.genDataLine("Action: ", 1, false);//
 		if (ttl < 0) {
@@ -118,7 +118,7 @@ public class PacketRouter extends Observable implements Observer {
 				}
 			}	
 		}
-		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "receive", false, 1);
+		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "received", false, 1);
 		message += "\n";
 		PrintUtil.printTextln(message, true, true);
 	}
@@ -179,9 +179,11 @@ public class PacketRouter extends Observable implements Observer {
 
 	/**
 	 * Starts router.
+	 * @return true
 	 */
-	public void start(){
+	public boolean start(){
 		client.addObserver(this);
+		return true;
 	}
 	
 	/**

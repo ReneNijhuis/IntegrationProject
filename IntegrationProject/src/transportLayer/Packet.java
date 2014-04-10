@@ -7,7 +7,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-import connectionLayer.Client;
+import connectionLayer.InternetProtocol;
 import encryptionLayer.Encryption;
 
 import tools.ByteUtils;
@@ -155,7 +155,7 @@ public class Packet {
 		this.currentSource = currentSource;
 		this.source = source;
 		this.destination = destination;
-		this.port = Client.MULTICAST_PORT;
+		this.port = InternetProtocol.MULTICAST_PORT;
 		this.TTL = TTL;
 		this.data = data;
 		updateHash();
@@ -169,7 +169,7 @@ public class Packet {
 		} catch (UnknownHostException e) {
 			// will probably never happen
 		}
-		this.port = Client.MULTICAST_PORT;
+		this.port = InternetProtocol.MULTICAST_PORT;
 		this.TTL = defTTL;
 		this.data = data;
 		updateHash();
@@ -288,22 +288,22 @@ public class Packet {
 	}
 	
 	/**
-	 * Generates a test-packet.
+	 * Generates a general-multicast-packet.
 	 * The currentSource and source will be set to the IP of this computer.
-	 * The destination and port will be Client.MULTICAST_ADDRESS and 
-	 * Client.MULTICAST_PORT respectively.
+	 * The destination and port will be InternetProtocol.MULTICAST_ADDRESS and 
+	 * InternetProtocol.MULTICAST_PORT respectively.
 	 * 
 	 * @param data to use
 	 * @return the test Packet
 	 */
-	public static Packet generateTest(byte[] data) {
+	public static Packet generatePacket(byte[] data) {
 		InetAddress currentSource;
 		InetAddress source;
 		InetAddress destination;
 		try {
 			currentSource = InetAddress.getLocalHost();
 			source = InetAddress.getLocalHost();
-			destination = InetAddress.getByName(Client.MULTICAST_ADDRESS);
+			destination = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
 		} catch (UnknownHostException e) {
 			// will probably never happen
 			return null;
@@ -319,7 +319,7 @@ public class Packet {
 	
 	public DatagramPacket toDatagram() {
 		byte[] datagramData = combineToByteArray(true);
-		return new DatagramPacket(datagramData, datagramData.length, currentSource, port);
+		return new DatagramPacket(datagramData, datagramData.length, destination, port);
 	}
 	
 	/**

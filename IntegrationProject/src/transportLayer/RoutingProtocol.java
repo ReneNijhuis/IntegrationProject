@@ -3,26 +3,25 @@ package transportLayer;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
-import connectionLayer.Client;
-
-public class RoutingProtocol implements Observer{
-	private Map<Integer, Integer> hopsPerNode = new HashMap<Integer, Integer>();
-	private List<String> directLinks = new ArrayList<String>();
+public class RoutingProtocol implements Observer, Runnable{
+	private Map<String, Integer> hopsPerNode = new HashMap<String, Integer>();
+	private Map<String,Long> directLinks = new HashMap<String,Long>();
+	private List<String> inetaddresses = new ArrayList<String>();
 	private byte[] HBData;
 	private byte[] MapData;
 	private Map<Integer, Integer> receivedHopsPerNode = new HashMap<Integer, Integer>();
 	InetAddress broad;
-	private byte[] MapData2 = hopsPerNode.toString().getBytes();
 	private byte[] receivedData;
-	PacketRouter router;
-	public RoutingProtocol(){
+	private boolean updatereceived = false;
+	private PacketRouter router;
+	public RoutingProtocol(PacketRouter router){
+		this.router = router;
 		try {
 			broad = InetAddress.getByName("226.1.2.3");
 		} catch (UnknownHostException e) {
@@ -35,61 +34,61 @@ public class RoutingProtocol implements Observer{
 		HBData = string.getBytes();
 	}
 
-	public void heartBeat(){
+	public void heartBeat() {
 		fillHB();
-		try {
-			Packet packet = new Packet(InetAddress.getLocalHost(), InetAddress.getLocalHost(), broad, (short) 1, HBData);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-		router.send(packet);
+		router.sendPacket(Packet.generateTest(HBData));
 	}
 
 	public void SendMap(){
 		fillHopsPerNode();
 		updateHopsPerNode();
 		fillMap();
-		try {
-			Packet packet = new Packet(InetAddress.getLocalHost(), InetAddress.getLocalHost(), broad, (short) 1, MapData);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-		router.send(packet);
-
+		router.sendPacket(Packet.generateTest(MapData));
 	}
 
 	public void updateHopsPerNode(){
-		for(int i = 0; i < 4; i ++){
+		for(int i = 0; i < inetaddresses.size(); i ++){
 			try {
-				if(i != InetAddress.getLocalHost().getAddress()[3]);
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			}
-			if(receivedHopsPerNode.containsKey(i)){
-				if(hopsPerNode.get(i) == null || hopsPerNode.get(i) > receivedHopsPerNode.get(i)+1){
-					hopsPerNode.put(i,receivedHopsPerNode.get(i)+1);
+				if(i != InetAddress.getLocalHost().getAddress()[3]){
+					if(receivedHopsPerNode.containsKey(i)){
+						if(!hopsPerNode.containsKey(inetaddresses.get(i)) || hopsPerNode.get(inetaddresses.get(i)) > receivedHopsPerNode.get(inetaddresses.get(i))+1){
+							hopsPerNode.put(inetaddresses.get(i),receivedHopsPerNode.get(inetaddresses.get(i))+1);
+						}
+					}
 				}
-			}
+			} catch (UnknownHostException e) {}
 		}
 	}
 
 	public void fillHopsPerNode(){
-		for(int i = 0; i < 4; i ++){
-			if(directLinks.contains(i)){
-				hopsPerNode.put(i, 0);
+		for(int i = 0; i < inetaddresses.size(); i ++){
+			if(directLinks.containsKey(inetaddresses.get(i))){
+				hopsPerNode.put(inetaddresses.get(i), 0);
 			}
 		}
 	}
 
 	public void fillMap(){
-
+		byte[] MapData2 = 	hopsPerNode.toString().getBytes();
 		MapData = new byte[MapData2.length + 3];
 		for(int i = 0; i < MapData2.length; i ++){
-			MapData[i] = MapData2[i];
+			MapData[i + 3] = MapData2[i];
 		}
-		MapData[MapData2.length] = 0x68;
-		MapData[MapData2.length+1] = 0x34;
-		MapData[MapData2.length+2] = 0x12;
+		MapData[0] = 0x68;
+		MapData[1] = 0x34;
+		MapData[2] = 0x12;
+	}
+
+	public void deleteHost(){
+		for (int i = 0; i < inetaddresses.size(); i++){
+			long time = System.currentTimeMillis();
+			if (directLinks.get(inetaddresses.get(i)) - time > 1000 && hopsPerNode.get(inetaddresses.get(i))==0){
+				directLinks.remove(inetaddresses.get(i));
+				hopsPerNode.remove(inetaddresses.get(i));
+				inetaddresses.remove(i);
+				updatereceived = true;
+			}
+		}
 	}
 
 
@@ -98,13 +97,21 @@ public class RoutingProtocol implements Observer{
 			Packet packet = (Packet)object;
 			packet.decrementTTL();
 			if(new String(packet.getPacketData()).contains("Kaviaar")){
-				directLinks.add(packet.getCurrentSource().toString());		
+				if (!inetaddresses.contains(packet.getCurrentSource().toString())){
+					inetaddresses.add(packet.getCurrentSource().toString());
+					updatereceived = true;
+				}
+				directLinks.put(packet.getCurrentSource().toString(),(System.currentTimeMillis()));
 			}
-				if(packet.getPacketData()[packet.getPacketData().length-3] == 0x68 && packet.getPacketData()[packet.getPacketData().length-2] == 0x34 && 
-						packet.getPacketData()[packet.getPacketData().length-1] == 0x12){
-					receivedData = packet.getPacketData();
-					receivedHopsPerNode = byteToMap(receivedData);
-				
+			if(packet.getPacketData()[0] == 0x68 && packet.getPacketData()[1] == 0x34 && 
+					packet.getPacketData()[2] == 0x12){
+				receivedData = new byte[packet.getPacketData().length-3];
+				for (int i = 0; i<receivedData.length; i++){
+					receivedData[i] = packet.getPacketData()[i+3];
+				}
+				receivedData = packet.getPacketData();
+				receivedHopsPerNode = byteToMap(receivedData);
+				updatereceived = true;
 			}
 		}
 	}
@@ -130,5 +137,21 @@ public class RoutingProtocol implements Observer{
 
 		return map;
 
+	}
+
+	@Override
+	public void run() {
+		while (true){
+			heartBeat();
+			if (updatereceived){
+				updateHopsPerNode();
+				SendMap();
+				updatereceived = false;
+			}
+			deleteHost();
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {}
+		}
 	}
 }

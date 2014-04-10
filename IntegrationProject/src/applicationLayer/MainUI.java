@@ -19,6 +19,10 @@ import java.awt.event.WindowEvent;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -65,7 +69,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	}
 
 	public void createInterface(){
-		
+				
 		textarea1.setEditable(false);
 		textarea2.setEditable(false);		
 
@@ -78,7 +82,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		con1.fill = GridBagConstraints.HORIZONTAL;
 		con1.gridx = 0;
 		con1.gridy = 1;
-		con1.ipady = 400;
+		con1.ipady = 385;
 		con1.ipadx = 172;
 
 		con2.fill = GridBagConstraints.HORIZONTAL;
@@ -87,16 +91,16 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		con2.gridx = 0;
 		con2.gridy = 0;
 		con2.ipady = 500;
-		con2.ipadx = 800;
+		con2.ipadx = 950;
 		con2.insets = insets;		
 
-		con3.fill = GridBagConstraints.HORIZONTAL;
+		con3.fill = GridBagConstraints.VERTICAL;
 		con3.weightx = 1.0;
 		con3.weighty = 1.0;
 		con3.gridx = 1;
 		con3.gridy = 1;
 		con3.ipady = 172;
-		con3.ipadx = 172;
+		con3.ipadx = 415;
 		con3.insets = insets;
 
 		con4.fill = GridBagConstraints.HORIZONTAL;
@@ -105,14 +109,49 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		con4.gridx = 0;
 		con4.gridy = 1;
 		con4.ipady = 155;
-		con4.ipadx = 800;
+		con4.ipadx = 950;
 		con4.insets = insets;		
 
 		con5.fill = GridBagConstraints.HORIZONTAL;
 		con5.gridx = 0;
 		con5.gridy = 0;
 		con5.ipady = 53;
-		con5.ipadx = 172;
+		con5.ipadx = 200;
+		
+		JMenuBar menuBar = new JMenuBar();
+		JMenu optionMenu = new JMenu("Options");
+		JMenuItem helpItem = new JMenuItem("Help");
+		helpItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				addPopup("Help", 
+						"Fill in a username and group password to login.\n", false
+						);
+			}
+		});
+		optionMenu.add(helpItem);
+		JMenuItem priveChatItem = new JMenuItem("PriveChat");
+		priveChatItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				addPopup("PriveChat", 
+						"Select a user for a privechat.\n", false
+						);
+			}
+		});
+		optionMenu.add(priveChatItem);
+		JMenuItem logOutItem = new JMenuItem("Logout");
+		logOutItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				addPopup("Logout", 
+						"Click here to logout.\n", false
+						);
+			}
+		});
+		optionMenu.add(logOutItem);
+		menuBar.add(optionMenu);
+		setJMenuBar(menuBar);
 		
 		Border border1 = new LineBorder(new Color(34,220,214), 6 ,false);
 		textarea1.setBorder(border1);
@@ -256,4 +295,16 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		);
 	}
 	
+	public void addPopup(String title, String message, boolean warning) {
+		if (!warning) {
+			JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
+		} else {
+			JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
+		}
+
+	}
+	public static void main(String[] args) {
+		MainUI mu = new MainUI(null);
+		mu.setVisible(true);
+	}
 }

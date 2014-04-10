@@ -3,9 +3,12 @@ package transportLayer;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import connectionLayer.Client;
+import encryptionLayer.Encryption;
 
 import tools.ByteUtils;
 import tools.PrintUtil;
@@ -18,22 +21,24 @@ import tools.PrintUtil;
  */
 public class Packet {
 
-	private static final int HEADER_LENGTH = 11;
+	private static final int HEADER_LENGTH = 73;
 	
-	// Header format: 4 bytes src, 4 bytes dest, 1 byte TTL, 2 bytes checksum
+	// Header format: 4 bytes src, 4 bytes dest, 1 byte TTL, 32 bytes sign, 32 bytes hash (SHA-256)
 	private InetAddress source;        // the creator of this packet
 	private InetAddress destination;   // the intended destination of this packet
 	private int port;				   // destination port
 	private short TTL;				   // max hopcount
-	private int checksum;			   // checksum of the headers
+	private byte[] signature;		   // HMAC of of headers and data with ttl = 0 & hash = 0
+	private byte[] hash;			   // hash of headers and data with ttl = 0;
 	private byte[] data;			   // actual data
 	private InetAddress currentSource; // the current broadcaster of this packet
 	
-	private static final InetAddress errSource = null; 		  // error value
-	private static final InetAddress errDestination = null;    // error value
-	private static final short errTTL = 256;			          // error value
-	private static final int errChecksum = 65531;		      // error value
-	private static final byte[] errData = "NoData".getBytes(); // error value
+	private static final InetAddress errSource = null; 		   		// error value
+	private static final InetAddress errDestination = null;    		// error value
+	private static final short errTTL = 256;			       		// error value
+	private static final byte[] errSignature = "NoSign".getBytes(); // error value
+	private static final byte[] errHash = "NoHash".getBytes();		// error value
+	private static final byte[] errData = "NoData".getBytes();		// error value
 	
 	private static final short defTTL = 10;
 	
@@ -49,7 +54,8 @@ public class Packet {
 			source = errSource;
 			destination = errDestination;
 			TTL = errTTL;
-			checksum = errChecksum;
+			signature = errSignature;
+			hash = errHash;
 			data = errData;
 			throw new MalformedPacketException("No headers or data found");
 		}
@@ -63,7 +69,8 @@ public class Packet {
 			source = errSource;
 			destination = errDestination;
 			TTL = errTTL;
-			checksum = errChecksum;
+			signature = errSignature;
+			hash = errHash;
 			data = errData;
 			throw new MalformedPacketException("All headers from 'src' missing");
 		}
@@ -76,7 +83,8 @@ public class Packet {
 			PrintUtil.printTextln("All headers from 'dest' missing", true);
 			destination = errDestination;
 			TTL = errTTL;
-			checksum = errChecksum;
+			signature = errSignature;
+			hash = errHash;
 			data = errData;
 			throw new MalformedPacketException("All headers from 'dest' missing");
 		}
@@ -85,17 +93,27 @@ public class Packet {
 		} catch (ArrayIndexOutOfBoundsException e) {
 			PrintUtil.printTextln("All headers from 'TTL' missing", true);
 			TTL = errTTL;
-			checksum = errChecksum;
+			signature = errSignature;
+			hash = errHash;
 			data = errData;
 			throw new MalformedPacketException("All headers from 'TTL' missing");
 		}
 		try { 
-			checksum = ByteUtils.bytesToShort(Arrays.copyOfRange(datagramData, 9, HEADER_LENGTH));
+			signature = Arrays.copyOfRange(datagramData, 9, 41);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			PrintUtil.printTextln("All headers from 'checksum' missing", true);
-			checksum = errChecksum;
+			PrintUtil.printTextln("All headers from 'signature' missing", true);
+			signature = errSignature;
+			hash = errHash;
 			data = errData;
-			throw new MalformedPacketException("All headers from 'checksum' missing");
+			throw new MalformedPacketException("All headers from 'signature' missing");
+		}	
+		try { 
+			hash = Arrays.copyOfRange(datagramData, 41, HEADER_LENGTH);
+		} catch (ArrayIndexOutOfBoundsException e) {
+			PrintUtil.printTextln("All headers from 'hash' missing", true);
+			hash = errHash;
+			data = errData;
+			throw new MalformedPacketException("All headers from 'hash' missing");
 		}	
 		byte[] tempData = Arrays.copyOfRange(datagramData, HEADER_LENGTH, datagramData.length);
 		int counter = tempData.length - 1;
@@ -140,10 +158,10 @@ public class Packet {
 		this.port = Client.MULTICAST_PORT;
 		this.TTL = TTL;
 		this.data = data;
-		updateChecksum();
+		updateHash();
 	}
 	
-	public Packet(InetAddress destination, byte[] data) throws MalformedPacketException {
+	public Packet(InetAddress destination, byte[] data) {
 		try {
 			this.destination = destination;
 			currentSource = InetAddress.getLocalHost();
@@ -154,6 +172,7 @@ public class Packet {
 		this.port = Client.MULTICAST_PORT;
 		this.TTL = defTTL;
 		this.data = data;
+		updateHash();
 	}
 	
 	/**
@@ -166,7 +185,8 @@ public class Packet {
 		destination = packet.getDestination();
 		port = packet.getPort();
 		TTL = packet.getTTL();
-		checksum = packet.getChecksum();
+		signature = packet.getSignature();
+		hash = packet.getHash();
 		data = packet.getPacketData();
 	}
 	
@@ -190,8 +210,12 @@ public class Packet {
 		return TTL;
 	}
 	
-	public int getChecksum() {
-		return checksum;
+	public byte[] getSignature() {
+		return signature;
+	}
+	
+	public byte[] getHash() {
+		return hash;
 	}
 	
 	public byte[] getPacketData(){
@@ -200,17 +224,17 @@ public class Packet {
 	
 	public void setCurrentSource(InetAddress currentSource) {
 		this.currentSource = currentSource;
-		updateChecksum();
+		updateHash();
 	}
 	
 	public void setSource(InetAddress source){
 		this.source = source;
-		updateChecksum();
+		updateHash();
 	}
 
 	public void setDestination(InetAddress destination){
 		this.destination = destination;
-		updateChecksum();
+		updateHash();
 	}
 	
 	public void decrementTTL(){
@@ -219,7 +243,7 @@ public class Packet {
 	
 	public void setPacketData(byte[] data) {
 		this.data = data;
-		updateChecksum();
+		updateHash();
 	}
 	
 	/**
@@ -294,22 +318,105 @@ public class Packet {
 	}
 	
 	public DatagramPacket toDatagram() {
-		byte[] datagramData = updateChecksum();
+		byte[] datagramData = combineToByteArray(true);
 		return new DatagramPacket(datagramData, datagramData.length, currentSource, port);
 	}
 	
-	private byte[] updateChecksum() {
-		//create temporary packet
-		byte[] datagramData = combineToByteArray();
-		// calculate and update checksum
-		byte[] checkSumBytes = calculateCheckSum(datagramData);
-		checksum = ByteUtils.bytesToShort(checkSumBytes);
-		// return datagramData with checksum
-		System.arraycopy(checkSumBytes, 0, datagramData, 9, checkSumBytes.length);
-		return datagramData;
+	/**
+	 * Returns whether the signature field in this packet has been set correctly.
+	 */
+	public boolean correctSignature(byte[] key) {
+		byte[] correctSign = calculateSignature(combineToByteArray(false), key);
+		return ByteUtils.compare(signature, correctSign);
+	}
+	
+	/**
+	 * Returns whether the hash field in this packet has been set correctly.
+	 */
+	public boolean correctHash() {
+		byte[] correctHash = calculateHash(combineToByteArray(false));
+		return ByteUtils.compare(hash, correctHash);
+	}
+	
+	/**
+	 * Updates the signature.<br>
+	 * THIS MUST BE DONE BEFORE TRANSMITTING PACKET
+	 * @param key the key to use
+	 */
+	public void updateSignature(byte[] key) {
+		signature = calculateSignature(combineToByteArray(false), key);
+	}
+	
+	private void updateHash() {
+		hash = calculateHash(combineToByteArray(false));
+	}
+	
+	private byte[] calculateSignature(byte[] toBeSignatured, byte[] key) {
+		byte[] sign = null;
+		try {
+			sign = Encryption.generateHMAC(key, toBeSignatured, Encryption.HMAC_ALGORITHM);
+		} catch (InvalidKeyException | NoSuchAlgorithmException e) {
+			// will not happen
+		}
+		return sign;
+	}
+	
+	private byte[] calculateHash(byte[] toBeHashed) {
+		byte[] sign = null;
+		try {
+			sign = Encryption.generateHash(toBeHashed, Encryption.SHA_256);
+		} catch (NoSuchAlgorithmException e) {
+			// will not happen
+		}
+		return sign;
+	}
+	
+	private byte[] combineToByteArray(boolean addSignAndHash) {
+		byte[] array = new byte[data.length + HEADER_LENGTH];
+		
+		// convert variables into byte (arrays)
+		byte[] srcBytes = source.getAddress();
+		byte[] destBytes = destination.getAddress();
+		byte[] ttlByte = new byte[]{(byte)TTL};
+		byte[] hashBytes = addSignAndHash ? hash : new byte[32];
+		byte[] signBytes = addSignAndHash ? signature : new byte[32];
+		
+		// create our header
+		int index = 0;
+		System.arraycopy(srcBytes, 0, array, 0, srcBytes.length);
+		index += srcBytes.length;
+		System.arraycopy(destBytes, 0, array, index, destBytes.length);
+		index += destBytes.length;
+		System.arraycopy(ttlByte, 0, array, index, 1);
+		index += ttlByte.length;
+		System.arraycopy(signBytes, 0, array, index, signBytes.length);
+		index += signBytes.length;
+		System.arraycopy(hashBytes, 0, array, index, hashBytes.length);
+		index += hashBytes.length;
+		System.arraycopy(data, 0, array, index, data.length);
+		
+		return array;
+	}
+	
+	@Override
+	public String toString() {	
+		String returner = PrintUtil.START + PrintUtil.genHeader("Packet", "", true, 3);
+		returner += PrintUtil.genDataLine("Current source: " + currentSource, 3);
+		returner += PrintUtil.genDataLine("Source: " + source , 3);
+		returner += PrintUtil.genDataLine("Destination: " + destination, 3);
+		returner += PrintUtil.genDataLine("Port: " + port, 3);
+		returner += PrintUtil.genDataLine("TTL: " + TTL, 3);
+		returner += PrintUtil.genDataLine("Hash: " + hash, 3);
+		returner += PrintUtil.genDataLine("Signature: " + signature, 3);
+		returner += PrintUtil.genDataLine("Data: " + new String(data), 3);
+		returner += PrintUtil.START + PrintUtil.genHeader("Packet", "", false, 3);
+		return returner;
 	}
 
-	private byte[] calculateCheckSum(byte[] bytesToCalulateOver) {
+}
+
+/* Museumartikelen
+ * 	private byte[] calculateCheckSum(byte[] bytesToCalulateOver) {
 		int length = bytesToCalulateOver.length;
 		int sum = 0;
 		if (length % 2 != 0) {
@@ -335,52 +442,5 @@ public class Packet {
 		
 		return checkSum;
 	}
-	
-	/**
-	 * Returns whether the checksum field in this packet has been set correctly.
-	 */
-	public boolean correctCheckSum() {
-		byte[] datagramData = combineToByteArray();
-		return correctCheckSum(datagramData);
-	}
-	
-	private boolean correctCheckSum(byte[] allData) {
-		byte[] calculatedCheckSum = calculateCheckSum(allData);
-		return calculatedCheckSum[0] == 0 && calculatedCheckSum[1] == 0;
-	}
-	
-	private byte[] combineToByteArray() {
-		byte[] array = new byte[data.length + 11];
-		
-		// convert variables into byte (arrays)
-		byte[] srcBytes = source.getAddress();
-		byte[] destBytes = destination.getAddress();
-		byte[] ttlByte = new byte[]{(byte)TTL};
-		byte[] checkSumBytes = new byte[] {0,0};
-		
-		// create our header
-		System.arraycopy(srcBytes, 0, array, 0, srcBytes.length);
-		System.arraycopy(destBytes, 0, array, 4, destBytes.length);
-		System.arraycopy(ttlByte, 0, array, 8, 1);
-		System.arraycopy(checkSumBytes, 0, array, 9, checkSumBytes.length);
-		System.arraycopy(data, 0, array, 11, data.length);
-		
-		return array;
-	}
-	
-	@Override
-	public String toString() {	
-		String returner = PrintUtil.START + PrintUtil.genHeader("Packet", "", true, 3);
-		returner += PrintUtil.genDataLine("Current source: " + currentSource, 3);
-		returner += PrintUtil.genDataLine("Source: " + source , 3);
-		returner += PrintUtil.genDataLine("Destination: " + destination, 3);
-		returner += PrintUtil.genDataLine("Port: " + port, 3);
-		returner += PrintUtil.genDataLine("TTL: " + TTL, 3);
-		returner += PrintUtil.genDataLine("Checksum: " + checksum, 3);
-		returner += PrintUtil.genDataLine("Data: " + new String(data), 3);
-		returner += PrintUtil.START + PrintUtil.genHeader("Packet", "", false, 3);
-		return returner;
-	}
-
-}
+ */
 

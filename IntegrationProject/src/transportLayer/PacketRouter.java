@@ -21,11 +21,13 @@ public class PacketRouter extends Observable implements Observer {
 
 	private Client client;
 	private InetAddress ownAddress;	
+	private byte[] key; // used for signing packets
 	
 	private ArrayList<ForwardRule> routingTable;
 	
-	public PacketRouter(Client client) {
+	public PacketRouter(Client client, byte[] key) {
 		this.client = client;
+		this.key = key;
 		routingTable = new ArrayList<ForwardRule>();
 		try {
 			ownAddress = InetAddress.getLocalHost();
@@ -74,6 +76,7 @@ public class PacketRouter extends Observable implements Observer {
 			message += PrintUtil.START + " FORWARD\n";
 			PrintUtil.printTextln(message, true, true);
 			message = "";
+			packet.updateSignature(key);
 			succes = client.sendPacket(packet);
 		}	
 		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", false, 1);
@@ -92,9 +95,9 @@ public class PacketRouter extends Observable implements Observer {
 		if (ttl < 0) {
 			// drop packet
 			message += PrintUtil.START + "DROP - TTL\n";	
-		} else if (!packet.correctCheckSum()) {
+		} else if (!packet.correctHash()) {
 			// drop packet
-			message += PrintUtil.START + "DROP - checksum\n";	
+			message += PrintUtil.START + "DROP - hash(checksum)\n";	
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
 			message += PrintUtil.START + "DROP - src\n";	

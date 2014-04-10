@@ -35,16 +35,7 @@ public class Main implements Observer {
 		// start LoginGUI
 		loginUI = new LoginGUI(this);
 		// create UI (don't show it yet)
-		mainUI = new MainUI(this);
-		// start Ad-Hoc-client
-		Client client = new Client();
-		client.start();
-		// start packet-router
-		router = new PacketRouter(client);
-		router.start();	
-		// start Packet-tracker (our kind of TCP)
-		tcp = new PacketTracker(router);
-		tcp.start();	
+		mainUI = new MainUI(this);	
 		// done here, wait for login to complete		
 	}
 	
@@ -56,7 +47,8 @@ public class Main implements Observer {
 	public boolean sendMessage(String message) {
 		ChatMessage fullMessage = new ChatMessage(name, message);
 		mainUI.addMessage(fullMessage);
-		return tcp.sendData(encryptor.encrypt(fullMessage.toString().getBytes()));	
+		//return tcp.sendData(encryptor.encrypt(fullMessage.toString().getBytes()));	
+		return router.sendPacket(Packet.generateTest(encryptor.encrypt(fullMessage.toString().getBytes())));	
 	}
 	
 	public static void main(String[] args) {
@@ -66,7 +58,7 @@ public class Main implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		if (o.equals(tcp) && arg instanceof String) {
+		/*if (o.equals(tcp) && arg instanceof String) {
 			String message = (String)arg;
 			if (message.equals("SHUTDOWN")) {
 				shutDown(false);
@@ -74,7 +66,18 @@ public class Main implements Observer {
 				ChatMessage fullMessage = new ChatMessage(encryptor.decrypt(message.getBytes()));
 				mainUI.addMessage(fullMessage);
 			}
-		}		
+		}*/
+		if (o.equals(router) && arg instanceof String) {
+			String message = (String)arg;
+			if (message.equals("SHUTDOWN")) {
+				shutDown(false);
+			} else if (o.equals(router) && arg instanceof Packet) {
+				String msg = new String(((Packet)arg).getPacketData());
+				ChatMessage fullMessage = new ChatMessage(encryptor.decrypt(msg.getBytes()));
+				mainUI.addMessage(fullMessage);
+			}
+		}
+		
 	}
 	
 	/**
@@ -93,6 +96,15 @@ public class Main implements Observer {
 		}
 		// create encryptor
 		encryptor = new Encryption(this.pass, iv);
+		// start Ad-Hoc-client
+		Client client = new Client();
+		client.start();
+		// start packet-router
+		router = new PacketRouter(client, this.pass);
+		router.start();	
+		// start Packet-tracker (our kind of TCP)
+		//TODO tcp = new PacketTracker(router);
+		//TODO tcp.start();
 		return true;
 	}
 	

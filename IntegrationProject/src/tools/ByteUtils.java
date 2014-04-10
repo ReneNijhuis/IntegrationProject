@@ -55,4 +55,22 @@ public class ByteUtils {
 		return result;
 	}
 	
+	/**
+	 * Byte arrays comparison. Not sensitive to timing attacks.
+	 * @param bs1 first array
+	 * @param bs2 second array
+	 * @return whether completely equal
+	 */
+	public static boolean compare(byte[] bs1, byte[] bs2) {
+		boolean equal = true;
+		for (byte b1 : bs1) {
+			for (byte b2 : bs2) {
+				if (b1 != b2) {
+					equal = false;
+				}
+			}
+		}
+		return equal;
+	}
+	
 }

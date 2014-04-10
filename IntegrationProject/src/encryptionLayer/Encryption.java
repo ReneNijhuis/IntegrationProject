@@ -16,6 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class Encryption {
 	
 	public static String SHA_256 = "SHA-256";
+	public static final String HMAC_ALGORITHM = "HmacSHA1";
 	
 
 	private byte[] key;
@@ -149,7 +150,7 @@ public class Encryption {
 	}
 	
 	/**
-	 * Secure integrity & avoid replay attacks 
+	 * Secure integrity
 	 * @param key
 	 * @param message
 	 * @param algoritm
@@ -157,21 +158,34 @@ public class Encryption {
 	 * @throws NoSuchAlgorithmException
 	 * @throws InvalidKeyException
 	 */
-	public static byte[] generateHMAC(String key, String message, String algoritm) throws NoSuchAlgorithmException, InvalidKeyException {
+	public static byte[] generateHMAC(byte[] key, byte[] message, String algorithm) throws NoSuchAlgorithmException, InvalidKeyException {
 		Mac mac = null;
 		try {
-			mac = Mac.getInstance(algoritm);
+			mac = Mac.getInstance(algorithm);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-		byte[] keyBytes = key.getBytes();
-		SecretKeySpec signingKey = new SecretKeySpec(keyBytes, algoritm);
+		byte[] keyBytes = key;
+		SecretKeySpec signingKey = new SecretKeySpec(keyBytes, algorithm);
 		try {
 			mac.init(signingKey);
 		} catch (InvalidKeyException e) {
 			e.printStackTrace();
 		}
-		return mac.doFinal(message.getBytes());
+		return mac.doFinal(message);
+	}
+	
+	/**
+	 * Secure integrity
+	 * @param key
+	 * @param message
+	 * @param algoritm
+	 * @return HMAC
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 */
+	public static byte[] generateHMAC(String key, String message, String algorithm) throws NoSuchAlgorithmException, InvalidKeyException {
+		return generateHMAC(key.getBytes(), message.getBytes(), algorithm);
 	}
 
 	/*public static void main(String[] args) {

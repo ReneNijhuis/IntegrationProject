@@ -19,10 +19,6 @@ import java.awt.event.WindowEvent;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -65,7 +61,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		setSize(windowSize);
 		setWindowLocation();
 		createInterface();
-		setVisible(true);
+		setVisible(false);
 	}
 
 	public void createInterface(){
@@ -174,45 +170,9 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		listPane3.setLayout(new BoxLayout(listPane3, BoxLayout.PAGE_AXIS));
 		listPane3.add(textfield1);
 		panel1.add(listPane3,con4);
+
 		panel1.setBackground(new Color(34,169,220));
-		
-		JMenuBar menuBar = new JMenuBar();
-		JMenu optionMenu = new JMenu("Options");
-		JMenuItem helpItem = new JMenuItem("Help");
-		helpItem.addActionListener(new ActionListener() {	
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addPopup("Help", 
-						"Fill in a username and group password to login.\n", false
-						);
-			}
-		});
-		JMenuItem uitloggenItem = new JMenuItem("Uitloggen");
-		uitloggenItem.addActionListener(new ActionListener() {	
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addPopup("Uitloggen", 
-						"Klik hier om uit te loggen.\n", false
-						);
-			}
-		});
-		JMenuItem priveChatItem = new JMenuItem("Privechat");
-		priveChatItem.addActionListener(new ActionListener() {	
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addPopup("priveChat", 
-						"Klik hier om gebruikers te kiezen voor een privechat.\n", false
-						);
-			}
-		});
-		optionMenu.add(helpItem);
-		optionMenu.add(uitloggenItem);
-		optionMenu.add(priveChatItem);
-		menuBar.add(optionMenu);
-		setJMenuBar(menuBar);
 		add(panel1);
-		setVisible(true);
-		setResizable(false);
 	}
 	
 	public void addMessage(ChatMessage fullMessage) {
@@ -294,20 +254,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		(int)(screenSize.getWidth() / 2 - windowSize.width / 2),
 		(int)(screenSize.getHeight() / 2 - windowSize.height / 2)
 		);
-	}
-	
-	public void addPopup(String title, String message, boolean warning) {
-		if (!warning) {
-			JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
-		} else {
-			JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
-		}
-
-	}
-	public static void main(String[] args) {
-		MainUI mu = new MainUI(null);
-		
-		
 	}
 	
 }

@@ -3,6 +3,7 @@ package encryptionLayer;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Random;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -61,7 +62,8 @@ public class Encryption {
 				try {
 					dividedPlainText[i][z] = plaintext[((i * 8) + z)];
 				} catch (Exception e){
-					dividedPlainText[i][z] = 0x00;
+					dividedPlainText[i][z] = (byte) new Random().nextInt(100);
+					//dividedPlainText[i][z] = 0x00;
 				}
 			}
 		}
@@ -87,7 +89,7 @@ public class Encryption {
 		if (amount == 8){
 			amount = 0;
 		}
-		byte[] amountpadding = {(byte) (amount),0,0,0,0,0,0,0};
+		byte[] amountpadding = {(byte) (amount)};
 		byte[] invector = iv;
 		for (int i = 0; i < bit.length ; i++){
 			invector = encryptByteArray(key,invector);
@@ -118,25 +120,29 @@ public class Encryption {
 	}
 
 	public byte[] removePaddingAmount(byte[] paddedbytes){
-		byte[] paddingremoved = new byte[(paddedbytes.length - 8)];
-		for (int z = 8;  z < (paddedbytes.length); z++){
-			paddingremoved[z-8] = paddedbytes[z];
+		byte[] paddingremoved = new byte[(paddedbytes.length-1)];
+		for (int z = 1;  z < (paddedbytes.length); z++){
+			paddingremoved[z-1] = paddedbytes[z];
 		}
 		return paddingremoved;
 	}
 
 	public byte[] multiByte(byte[][] mbytes){
-		int length = 0;
-		for (int i = 0; i < mbytes.length; i++){
-			length += mbytes[i].length;
-		}
-		byte[] printshit = new byte[length];
+		byte[] printshit = new byte[getPreviousLength(mbytes, mbytes.length)];
 		for (int i = 0; i < mbytes.length; i++){
 			for (int j = 0; j < mbytes[i].length; j++){
-				printshit[((8 * i) + j)] = mbytes[i][j];
+				printshit[((getPreviousLength(mbytes,i)) + j)] = mbytes[i][j];
 			}
 		}
 		return printshit;
+	}
+
+	public int getPreviousLength(byte[][] mbytes, int current){
+		int length = 0;
+		for (int i = 0; i < current; i++){
+			length += mbytes[i].length;
+		}
+		return length;
 	}
 
 	public static byte[] generateHash(String message, String algorithm) throws NoSuchAlgorithmException {
@@ -190,7 +196,7 @@ public class Encryption {
 
 	/*public static void main(String[] args) {
 		Encryption ev = new Encryption();
-		byte[] x = ev.encrypt("Hallo ik ben rob".getBytes());
+		byte[] x = ev.encrypt("1234567891".getBytes());
 		System.out.println(new String(x));
 		System.out.println(ev.decrypt(x));
 	}*/

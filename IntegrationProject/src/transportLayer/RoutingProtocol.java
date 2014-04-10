@@ -38,7 +38,7 @@ public class RoutingProtocol implements Observer{
 	public void heartBeat(){
 		fillHB();
 		try {
-			Packet packet = new Packet(InetAddress.getLocalHost(), InetAddress.getLocalHost(), broad, 1, HBData);
+			Packet packet = new Packet(InetAddress.getLocalHost(), InetAddress.getLocalHost(), broad, (short) 1, HBData);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -50,7 +50,7 @@ public class RoutingProtocol implements Observer{
 		updateHopsPerNode();
 		fillMap();
 		try {
-			Packet packet = new Packet(InetAddress.getLocalHost(), InetAddress.getLocalHost(), broad, 1, MapData);
+			Packet packet = new Packet(InetAddress.getLocalHost(), InetAddress.getLocalHost(), broad, (short) 1, MapData);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}

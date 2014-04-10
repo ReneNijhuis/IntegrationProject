@@ -9,6 +9,15 @@ public class TraceablePacket {
 	private ControlFlag flags;
 	private byte[] data;
 	
+	public TraceablePacket(Packet packetToUnpack) {
+		byte[] unpackedData = packetToUnpack.getPacketData();
+		trackNr = ByteUtils.bytesToShort(new byte[] {unpackedData[0], unpackedData[1]});
+		expectedNr = ByteUtils.bytesToShort(new byte[] {unpackedData[2], unpackedData[3]});
+		flags = ControlFlag.fromByte(unpackedData[4]);
+		data = new byte[unpackedData.length -5];
+		System.arraycopy(unpackedData, 5, data, 0, unpackedData.length -5);		
+	}
+	
 	public TraceablePacket(short trackNr, short nextExpectedNr, byte[] dataToSend) {
 		this(trackNr, nextExpectedNr, ControlFlag.ACK, dataToSend);
 	}
@@ -30,6 +39,10 @@ public class TraceablePacket {
 	
 	public byte[] getData() {
 		return data;
+	}
+	
+	public ControlFlag getFlag() {
+		return flags;
 	}
 	
 	public byte[] toByteArray() {

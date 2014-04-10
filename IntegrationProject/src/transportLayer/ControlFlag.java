@@ -21,7 +21,7 @@ public enum ControlFlag {
 		}
 	}
 	
-	public ControlFlag fromByte(byte byteFlag) {
+	public static ControlFlag fromByte(byte byteFlag) {
 		switch(byteFlag) {
 			case (byte) 0b00000011:
 				return ACK;

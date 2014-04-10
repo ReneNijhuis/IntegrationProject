@@ -86,25 +86,42 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				pendingPackets.remove(trackNr - 1);
 				pendingTime.remove(trackNr - 1);
 				timesSent.remove(trackNr - 1);
-				couldHandle = setupConnection(true, tp);				
+				couldHandle = setupConnection(true, tp);
+			} else if (tp.getFlag() == ControlFlag.ACK) {
+				pendingPackets.remove(trackNr - 1);
+				pendingTime.remove(trackNr - 1);
+				timesSent.remove(trackNr - 1);
+				connectionAlive = true;
 			} else if (tp.getFlag() == ControlFlag.SYN) {
 				couldHandle = setupConnection(false, tp);
 			} else { 
-				endConnection();
+				endConnection(true, null);
 			}
 		} else {
-			//TODO
+			if (tp.getFlag() == ControlFlag.FIN) {
+				endConnection(false, null);
+			} else if (tp.getFlag() == ControlFlag.FIN_ACK) {
+				shutDown(true, false);
+			} else {
+				processReceivedPacket(tp);
+			}
 		}		
 		return couldHandle;
+	}
+
+	private void processReceivedPacket(TraceablePacket tp) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	public void shutDown(boolean selfDestruct, boolean appInit) {
 		router.deleteObserver(this);
 		if (selfDestruct || appInit) {
 			if (appInit) {
-				endConnection();
+				endConnection(true, null);
+			} else {
+				router.shutDown(selfDestruct, appInit);
 			}
-			router.shutDown(selfDestruct, appInit);	
 		}
 		if (selfDestruct || !appInit) {
 			notifyObservers("SHUTDOWN");
@@ -175,9 +192,6 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		boolean couldSend = true;
 		TraceablePacket setupACK = new TraceablePacket(trackNr, expectedNr, new byte[0]);
 		Packet sendablePacket = new Packet(connectionAddress, setupACK.toByteArray());
-		pendingPackets.put(trackNr, setupACK);
-		timesSent.put(trackNr, (byte) 1);
-		pendingTime.put(trackNr, System.currentTimeMillis());
 		couldSend = router.sendPacket(sendablePacket);
 		trackNr = increaseValue(trackNr);
 		return couldSend;
@@ -195,8 +209,18 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		return couldSend;
 	}
 	
-	private void endConnection() {
-		// TODO Auto-generated method stub
+	private void endConnection(boolean selfInitiated, TraceablePacket tp) {
+		if (selfInitiated) {
+			TraceablePacket finPacket = new TraceablePacket(trackNr, expectedNr, ControlFlag.FIN, new byte[0]);
+			Packet sendablePacket = new Packet(connectionAddress, finPacket.toByteArray());
+			pendingPackets.put(trackNr, finPacket);
+			timesSent.put(trackNr, (byte) 1);
+			pendingTime.put(trackNr, System.currentTimeMillis());
+			router.sendPacket(sendablePacket);
+			trackNr = increaseValue(trackNr);
+		} else {
+			//TODO
+		}
 		
 	}
 	

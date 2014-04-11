@@ -1,7 +1,9 @@
 package transportLayer;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Map.Entry;
 import java.util.Observable;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -103,13 +105,13 @@ public class PacketTracker extends Observable implements NetworkLayer {
 			} else if (tp.getFlag() == ControlFlag.FIN_ACK) {
 				shutDown(true, false);
 			} else {
-				processReceivedPacket(tp);
+				processReceivedAck(tp);
 			}
 		}		
 		return couldHandle;
 	}
 
-	private void processReceivedPacket(TraceablePacket tp) {
+	private void processReceivedAck(TraceablePacket tp) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -151,7 +153,19 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	}
 
 	protected void tick() {
-		// TODO Auto-generated method stub
+		long time = System.currentTimeMillis();
+		if (pendingTime.containsValue(time)) {
+			Entry<Short, Long>[] pendingEntries = 
+					(Entry<Short, Long>[]) pendingTime.entrySet().toArray();
+			short[] trackNrsToResend = new short[pendingEntries.length];
+			for (int i = 0; i < pendingEntries.length; i++) {
+				Entry<Short, Long> e = pendingEntries[i];
+				if (e.getValue() <= time) {
+					trackNrsToResend[i] = e.getKey();
+				}
+			}
+			
+		}
 		
 	}
 	
@@ -213,13 +227,27 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		if (selfInitiated) {
 			TraceablePacket finPacket = new TraceablePacket(trackNr, expectedNr, ControlFlag.FIN, new byte[0]);
 			Packet sendablePacket = new Packet(connectionAddress, finPacket.toByteArray());
-			pendingPackets.put(trackNr, finPacket);
-			timesSent.put(trackNr, (byte) 1);
-			pendingTime.put(trackNr, System.currentTimeMillis());
-			router.sendPacket(sendablePacket);
-			trackNr = increaseValue(trackNr);
+			if (pendingPackets.keySet().size() < MAX_PENDING_PACKETS){
+				pendingPackets.put(trackNr, tp);
+				timesSent.put(trackNr, (byte) 1);
+				pendingTime.put(trackNr, System.currentTimeMillis());
+				router.sendPacket(sendablePacket);
+				trackNr = increaseValue(trackNr);
+			} else {
+				dataBuffer.add(new byte[] {-1, -1, -1});
+			}
 		} else {
-			//TODO
+			TraceablePacket finAck = new TraceablePacket(trackNr, expectedNr, ControlFlag.FIN_ACK, new byte[0]);
+			Packet sendablePacket = new Packet(connectionAddress, finAck.toByteArray());
+			if (pendingPackets.keySet().size() < MAX_PENDING_PACKETS){
+				pendingPackets.put(trackNr, tp);
+				timesSent.put(trackNr, (byte) 1);
+				pendingTime.put(trackNr, System.currentTimeMillis());
+				router.sendPacket(sendablePacket);
+				trackNr = increaseValue(trackNr);
+			} else {
+				dataBuffer.add(new byte[] {-1, 0, -1});
+			}
 		}
 		
 	}

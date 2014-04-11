@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -21,17 +20,17 @@ import encryptionLayer.Encryption;
  *
  */
 public class Main implements Observer {
-	
+
 	private MainUI mainUI;
 	private LoginGUI loginUI;
 	private PacketRouter router;
 	private PacketTracker tcp;
-	
+
 	private Encryption encryptor;
 	private String name;
 	private byte[] pass;
 	private byte[] iv;
-	
+
 	public Main() {
 		// start LoginGUI
 		loginUI = new LoginGUI(this);
@@ -39,7 +38,7 @@ public class Main implements Observer {
 		mainUI = new MainUI(this);	
 		// done here, wait for login to complete		
 	}
-	
+
 	/**
 	 * Sends a message to connected clients.
 	 * @param message to send
@@ -48,10 +47,11 @@ public class Main implements Observer {
 	public boolean sendMessage(String message) {
 		ChatMessage fullMessage = new ChatMessage(name, message);
 		mainUI.addMessage(fullMessage);
-		byte[] cipherText = encryptor.encrypt(fullMessage.toString().getBytes());
-		return router.sendPacket(Packet.generatePacket(cipherText));	
+		//return tcp.sendData(encryptor.encrypt(fullMessage.toString().getBytes()));
+		//byte[] cipherText = encryptor.encrypt(fullMessage.toString().getBytes());
+		return router.sendPacket(Packet.generatePacket(fullMessage.toString().getBytes()));	
 	}
-	
+
 	public static void main(String[] args) {
 		@SuppressWarnings("unused")
 		Main main = new Main();
@@ -72,16 +72,16 @@ public class Main implements Observer {
 			String message = (String)arg;
 			if (message.equals("SHUTDOWN")) {
 				shutDown(false);
-			} 
-		}
-		else if (o.equals(router) && arg instanceof Packet) {
-			byte[] msg = ((Packet)arg).getPacketData();
-			System.out.println(Arrays.toString(msg));
-			ChatMessage fullMessage = new ChatMessage(encryptor.decrypt(msg));
+			}
+		} else if (o.equals(router) && arg instanceof Packet) {
+			String msg = new String(((Packet)arg).getPacketData());
+			ChatMessage fullMessage = new ChatMessage((msg));
 			mainUI.addMessage(fullMessage);
 		}
 	}
-	
+
+
+
 	/**
 	 * Used by login screen to login.
 	 * @param name of user
@@ -110,14 +110,14 @@ public class Main implements Observer {
 		//TODO tcp.start();
 		return true;
 	}
-	
+
 	/**
 	 * Really login
 	 */
 	public void login() {
 		mainUI.setVisible(true);
 	}
-	
+
 	/**
 	 * The IV is the double-hash of the original key (hash of hashed key).
 	 */

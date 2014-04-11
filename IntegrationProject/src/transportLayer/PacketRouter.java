@@ -99,10 +99,10 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (!packet.correctHash()) {
 			// drop packet
 			message += PrintUtil.START + "DROP - hash(checksum)\n";	
-		} else if (packet.getSource().equals(ownAddress)) {
+		/*} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
-			message += PrintUtil.START + "DROP - src\n";	
-		} else if (packet.getDestination().equals(ownAddress)) {
+			message += PrintUtil.START + "DROP - src\n";*/	
+		} else if (dest.equals(ownAddress) || dest.equals(client.MULTICAST_ADDR)) {
 			// read packet, not forward
 			message += PrintUtil.START + "READ, NOT FORWARD\n";	
 			notifyObservers(packet);

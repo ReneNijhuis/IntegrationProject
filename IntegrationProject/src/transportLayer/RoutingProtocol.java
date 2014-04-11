@@ -9,6 +9,10 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
+import com.sun.security.ntlm.Client;
+
+import connectionLayer.InternetProtocol;
+
 import applicationLayer.Main;
 
 public class RoutingProtocol implements Observer, Runnable {
@@ -53,15 +57,13 @@ public class RoutingProtocol implements Observer, Runnable {
 
 	public void updateHopsPerNode(){
 		for(int i = 0; i < inetaddresses.size(); i ++){
-			try {
-				if(i != InetAddress.getLocalHost().getAddress()[3]){
-					if(receivedHopsPerNode.containsKey(i)){
-						if(!hopsPerNode.containsKey(inetaddresses.get(i)) || hopsPerNode.get(inetaddresses.get(i)) > receivedHopsPerNode.get(inetaddresses.get(i))+1){
-							hopsPerNode.put(inetaddresses.get(i),receivedHopsPerNode.get(inetaddresses.get(i))+1);
-						}
+			if(i != InternetProtocol.MULTICAST_ADDRESS.getBytes()[3]){
+				if(receivedHopsPerNode.containsKey(i)){
+					if(!hopsPerNode.containsKey(inetaddresses.get(i)) || hopsPerNode.get(inetaddresses.get(i)) > receivedHopsPerNode.get(inetaddresses.get(i))+1){
+						hopsPerNode.put(inetaddresses.get(i),receivedHopsPerNode.get(inetaddresses.get(i))+1);
 					}
 				}
-			} catch (UnknownHostException e) {}
+			}
 		}
 	}
 

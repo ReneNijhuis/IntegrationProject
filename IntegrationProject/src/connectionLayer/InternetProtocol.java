@@ -23,10 +23,10 @@ import transportLayer.Packet;
 public class InternetProtocol extends Observable {
 
 	public static final int MAX_PACKET_LENGTH = 1024;
-	public static final int MAX_PACKET_TEST_LENGTH = 10;
+	private static final int MAX_PACKET_TEST_LENGTH = 10;
 	public static final String MULTICAST_ADDRESS = "226.1.2.3"; 
 	public static final int MULTICAST_PORT = 11234;
-	private InetAddress multicastAddress;
+	public InetAddress MULTICAST_ADDR = null;
 	
 	private MulticastSocket socket; 
 	private DatagramSocket sendSocket;
@@ -42,6 +42,7 @@ public class InternetProtocol extends Observable {
 		try {
 			socket = new MulticastSocket(MULTICAST_PORT);
 			sendSocket = new DatagramSocket();
+			MULTICAST_ADDR = InetAddress.getByName(MULTICAST_ADDRESS);
 		} catch (IOException e) {}
 	}
 	
@@ -53,13 +54,7 @@ public class InternetProtocol extends Observable {
 	 */
 	public boolean start() {
 		try {
-			multicastAddress = InetAddress.getByName(MULTICAST_ADDRESS);
-		} catch (UnknownHostException e) {
-			shutdown(true);
-			return false;
-		}
-		try {
-			socket.joinGroup(multicastAddress);
+			socket.joinGroup(MULTICAST_ADDR);
 		} catch (IOException e) {
 			shutdown(true);
 			return false;
@@ -189,7 +184,7 @@ public class InternetProtocol extends Observable {
 			}
 			stop = true;
 			try {
-				socket.leaveGroup(multicastAddress);
+				socket.leaveGroup(MULTICAST_ADDR);
 			} catch (IOException e) {}
 			socket.close();
 		}

@@ -15,6 +15,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.nio.channels.ShutdownChannelGroupException;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -223,10 +224,15 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		if (arg0.getSource() == button1){
 			String message = textfield1.getText();
 			if (!message.equals("Input text here:")){
-				main.sendMessage(message);
 				textfield1.setText("");
 				sendEnabled = false;
 				updateSendButton();
+				if (!main.sendMessage(message)) {
+					addPopup("Network error", "Network not available, please connect and restart", true);
+					main.shutDown(false);
+					setVisible(false);
+				}
+
 			}
 		}
 	}
@@ -239,7 +245,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 				if (c == '\n') {
 					if (sendEnabled) {
 						String message = textfield1.getText();
-						if (!message.equals("Input text here:")){
+						if (!message.equals("Input text here:")) {
 							main.sendMessage(message);
 							textfield1.setText("");
 							sendEnabled = false;
@@ -302,9 +308,5 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
 		}
 
-	}
-	public static void main(String[] args) {
-		MainUI mu = new MainUI(null);
-		mu.setVisible(true);
 	}
 }

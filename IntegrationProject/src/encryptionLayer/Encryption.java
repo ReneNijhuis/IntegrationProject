@@ -3,6 +3,7 @@ package encryptionLayer;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Random;
 
 import javax.crypto.Mac;
@@ -15,11 +16,12 @@ import javax.crypto.spec.SecretKeySpec;
  */
 
 public class Encryption {
-	
+
 	public static String SHA_256 = "SHA-256";
 	public static final String HMAC_ALGORITHM = "HmacSHA256";
-	
 
+	private ArrayList<Integer> sendIntegers = new ArrayList<Integer>();
+	private ArrayList<Integer> receivedIntegers = new ArrayList<Integer>();
 	private byte[] key;
 	private byte[] iv;
 
@@ -29,7 +31,7 @@ public class Encryption {
 	public Encryption (){
 		this("vissenkom".getBytes(), "karper".getBytes());
 	}
-	
+
 	/**
 	 * The constructor for the OFB encryption class.
 	 * @param key the key used for the encryption. This can not be less than 8 bytes.
@@ -37,7 +39,7 @@ public class Encryption {
 	public Encryption (byte[] key){
 		this(key, "karper".getBytes());
 	}
-	
+
 	/**
 	 * The constructor for the OFB encryption class.
 	 * @param key the key used for the encryption. This can not be less than 8 bytes.
@@ -47,7 +49,7 @@ public class Encryption {
 		this.key = key;
 		this.iv = iv;
 	}
-	
+
 	public static byte[][] dividePlainText(byte[] plaintext){
 		int length = plaintext.length;
 		int size = 0;
@@ -63,7 +65,6 @@ public class Encryption {
 					dividedPlainText[i][z] = plaintext[((i * 8) + z)];
 				} catch (Exception e){
 					dividedPlainText[i][z] = (byte) new Random().nextInt(100);
-					//dividedPlainText[i][z] = 0x00;
 				}
 			}
 		}
@@ -83,9 +84,22 @@ public class Encryption {
 	}
 
 	public byte[] encrypt(byte[] plaintext){
-		byte[][] bit = dividePlainText(plaintext);
+		int randomNumber = new Random().nextInt(50);
+		while (sendIntegers.contains(randomNumber)){
+			randomNumber = new Random().nextInt(50);
+		}
+		sendIntegers.add(randomNumber);
+		if (sendIntegers.size() == 50){
+			sendIntegers = new ArrayList<Integer>();
+		}
+		byte[] newplaintext = new byte[plaintext.length+1];
+		newplaintext[0] = (byte) randomNumber;
+		for (int i = 0; i < plaintext.length; i++){
+			newplaintext[i+1] = plaintext[i];
+		}
+		byte[][] bit = dividePlainText(newplaintext);
 		byte[][] ciphertext = new byte[bit.length][8];
-		int amount = (8-(plaintext.length % 8));
+		int amount = (8-(newplaintext.length % 8));
 		if (amount == 8){
 			amount = 0;
 		}
@@ -101,6 +115,7 @@ public class Encryption {
 
 	public String decrypt(byte[] ciphertext){
 		byte[] paddingremoved = removePaddingAmount(ciphertext);
+
 		byte[][] bit = dividePlainText(paddingremoved);
 		byte[][] plaintext = new byte[bit.length][8];
 		byte[] invector = iv;
@@ -108,7 +123,20 @@ public class Encryption {
 			invector = encryptByteArray(key,invector);
 			plaintext[i] = encryptByteArray(invector,bit[i]);
 		}
-		return new String(removePadding(multiByte(plaintext),(int) ciphertext[0]));
+		byte[] returnthis = removePadding(multiByte(plaintext),(int) ciphertext[0]);
+		byte[] randombyteremoved = new byte[returnthis.length-1];
+		for (int i = 0; i < randombyteremoved.length; i++){
+			randombyteremoved[i] = returnthis[i+1];
+		}
+		int randomIndentifyer = (int) returnthis[0];
+		if (!receivedIntegers.contains(randomIndentifyer)){
+			receivedIntegers.add(randomIndentifyer);
+			if (receivedIntegers.size() == 50){
+				receivedIntegers = new ArrayList<Integer>();
+			}
+			return new String(randombyteremoved);
+		}
+		return null;
 	}
 
 	public byte[] removePadding (byte[] paddedbytes, int amountpadding){
@@ -148,13 +176,13 @@ public class Encryption {
 	public static byte[] generateHash(String message, String algorithm) throws NoSuchAlgorithmException {
 		return generateHash(message.getBytes(), algorithm);
 	}
-	
+
 	public static byte[] generateHash(byte[] message, String algorithm) throws NoSuchAlgorithmException {
 		MessageDigest md = MessageDigest.getInstance(algorithm);
 		md.update(message);
 		return md.digest();
 	}
-	
+
 	/**
 	 * Secure integrity
 	 * @param key
@@ -180,7 +208,7 @@ public class Encryption {
 		}
 		return mac.doFinal(message);
 	}
-	
+
 	/**
 	 * Secure integrity
 	 * @param key
@@ -196,8 +224,11 @@ public class Encryption {
 
 	/*public static void main(String[] args) {
 		Encryption ev = new Encryption();
-		byte[] x = ev.encrypt("1234567891".getBytes());
-		System.out.println(new String(x));
-		System.out.println(ev.decrypt(x));
+		for (int i = 0; i < 30 ; i++){
+			byte[] x = ev.encrypt("1234567891".getBytes());
+			System.out.println(new String(x));
+			System.out.println(ev.decrypt(x));
+		}
+
 	}*/
 }

@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Observable;
 import java.util.Observer;
 
+import tools.PrintUtil;
 import transportLayer.GetIp;
 import transportLayer.MalformedPacketException;
 import transportLayer.Packet;
@@ -82,8 +83,14 @@ public class Main implements Observer {
 		else if (o.equals(router) && arg instanceof Packet) {
 			byte[] msg = ((Packet)arg).getPacketData();
 			System.out.println(Arrays.toString(msg));
-			ChatMessage fullMessage = new ChatMessage(encryptor.decrypt(msg));
-			mainUI.addMessage(fullMessage);
+			try {
+				ChatMessage fullMessage = new ChatMessage(encryptor.decrypt(msg));
+				mainUI.addMessage(fullMessage);
+			} catch (ArrayIndexOutOfBoundsException e) {
+				//TODO PrintUtil.genHeader("Application", "got message", true, 0);
+				// drop packet
+			}
+			
 		}
 	}
 	
@@ -126,7 +133,7 @@ public class Main implements Observer {
 	 * Really login
 	 */
 	public void login() {
-		mainUI.setVisible(true);
+		//mainUI.setVisible(true);
 	}
 	
 	/**

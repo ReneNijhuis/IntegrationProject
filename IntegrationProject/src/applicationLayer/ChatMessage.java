@@ -16,7 +16,7 @@ public class ChatMessage {
 		this.message = message;
 	}
 	
-	public ChatMessage(String fullMessage) {
+	public ChatMessage(String fullMessage) throws ArrayIndexOutOfBoundsException {
 		String[] data = fullMessage.split(":\t");
 		sender = data[0];
 		message = data[1];
@@ -26,7 +26,7 @@ public class ChatMessage {
 		return sender;
 	}
 	
-	public String getMessage() {
+	public String getMessage() { 
 		return message;
 	}
 	

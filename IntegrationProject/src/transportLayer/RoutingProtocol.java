@@ -13,7 +13,7 @@ import connectionLayer.InternetProtocol;
 
 public class RoutingProtocol implements Observer {
 
-	public static final int HEARTBEAT_INTERVAL = 0; //ms
+	public static final int HEARTBEAT_INTERVAL = 2000; //ms
 	private static final String HEARTBEAT_MESSAGE = "Secretkey=Kaviaar";
 	private static final byte[] HEARTBEAT_MESSAGE_BYTES = HEARTBEAT_MESSAGE.getBytes();
 	

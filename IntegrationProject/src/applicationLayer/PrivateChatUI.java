@@ -30,7 +30,7 @@ import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 
-public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-- should extend JFrame: easier and more clear implementation
+public class PrivateChatUI extends JFrame implements KeyListener, ActionListener{ // <-- should extend JFrame: easier and more clear implementation
 	private static final long serialVersionUID = 5488009698932086488L;
 	
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -51,12 +51,12 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private int margin = 10;
 	private Insets insets = new Insets(margin, margin, margin, margin);
 	
-	public MainUI(Main main){
+	public PrivateChatUI(Main main){
 		super("Chatbox");
 		this.main = main;
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				((MainUI) e.getWindow()).main.shutDown(true);
+				((PrivateChatUI) e.getWindow()).main.shutDown(true);
 			}
 			public void windowClosed(WindowEvent e) {
 				System.exit(0);
@@ -65,7 +65,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		setSize(windowSize);
 		setWindowLocation();
 		createInterface();
-		setVisible(false);
+		setVisible(true);
 	}
 
 	public void createInterface(){
@@ -143,7 +143,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				addPopup("Help", 
-						"You are now using group chat.\nAll messages that are send will be distributed to every member of the group.\n", false
+						"You are now using private chat.\nAll messages that are send will be distributed to only the other chatmember.\n", false
 						);
 			}});
 		optionMenu.add(helpItem);
@@ -184,7 +184,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		toparea.setBackground(new Color(34,121,220));
 		toparea.setForeground(new Color(34,220,214));
 		toparea.setEditable(false);
-		toparea.setText("Connected Devices:");
+		toparea.setText("You are now chatting with:");
 		JPanel insertpanel = new JPanel(new GridBagLayout());
 		insertpanel.setBackground(new Color(34,121,220));
 		insertpanel.add(toparea,con5);
@@ -318,4 +318,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 
 	}
-}
+	public static void main(String[] args) {
+		PrivateChatUI mu = new PrivateChatUI(null);
+	}}

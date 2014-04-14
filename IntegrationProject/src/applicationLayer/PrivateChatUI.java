@@ -114,7 +114,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		con4.ipadx = (int) (windowWidth / 1.4);
 		con4.insets = insets;		
 
-		con5.fill = GridBagConstraints.HORIZONTAL;
+		con5.fill = GridBagConstraints.BOTH;
 		con5.weightx = 1.0;
 		con5.weighty = 1.0;
 		con5.gridx = 0;
@@ -127,7 +127,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		con6.gridx = 1;
 		con6.gridy = 0;
 		con6.ipady = (int) (windowHeight / 5);
-		con6.ipadx = (int) (windowWidth / 17);
+		con6.ipadx = (int) (windowWidth / 4.5);
 		con6.insets = insets;
 		
 		con7.fill = GridBagConstraints.BOTH;
@@ -198,6 +198,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		button1.setBackground(new Color(255,255,255));
 		button1.setForeground(new Color(34,121,220));
 		button1.setText("Send");
+		button1.setEnabled(false);
 		JPanel listPane4 = new JPanel(new GridBagLayout());
 		listPane4.add(button1,con7);
 		listPane4.setBorder(border3);

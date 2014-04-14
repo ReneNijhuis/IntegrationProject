@@ -141,21 +141,27 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	public void actionPerformed(ActionEvent e) {
 		Object src = e.getSource();
 		if (src.equals(bLogin)) {
-			String theName = name.getText();
-			String thePass = new String(password.getPassword());
-			if (isValidPassword(thePass)) {
-				if (main.tryLogin(theName, thePass)) {
-					setVisible(false);
-					reset();
-					main.login();
-				}
-			} else {
-				addPopup("Password error", theName + ", the password is not valid!\n" +
-						"The password should at least consist of 6 characters and " +
-						"should contain no spaces", true);
+			login();
+		}	
+	}
+	
+	private void login() {
+		String theName = name.getText();
+		String thePass = new String(password.getPassword());
+		if (isValidPassword(thePass)) {
+			if (main.tryLogin(theName, thePass)) {
+				setVisible(false);
+				reset();
+				main.login();
 			}
+		} else {
+			if (theName == "") {
+				theName = "Somebody";
+			}
+			addPopup("Password error", theName + ", the password is not valid!\n" +
+					"The password should at least consist of 6 characters and " +
+					"should contain no spaces", true);
 		}
-		
 	}
 	
 	public void reset() {
@@ -169,8 +175,13 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	@Override
 	public void keyTyped(KeyEvent e) {
 		Object trigger = e.getSource();
-		updateFieldBooleans(e, (JTextField) trigger);
-		updateLoginButton();
+		if (e.getKeyChar() == '\n' && nameTyped && passwordTyped) {
+			login();
+		} else {
+			updateFieldBooleans(e, (JTextField) trigger);
+			updateLoginButton();
+		}
+
 	}
 
 	private void updateFieldBooleans(KeyEvent e, JTextField item) {

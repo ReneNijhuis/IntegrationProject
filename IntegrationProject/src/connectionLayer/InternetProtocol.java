@@ -124,7 +124,7 @@ public class InternetProtocol extends Observable {
 	 * Sends a Packet.
 	 * @param datagramPacket to send
 	 */
-	public boolean sendPacket(Packet packet) {
+	public boolean sendPacket(Packet packet) throws MalformedPacketException {
 		try {
 			setTTL(packet.getTTL());
 			sendSocket.send(packet.toDatagram());
@@ -149,7 +149,7 @@ public class InternetProtocol extends Observable {
 	public boolean sendPacket(DatagramPacket datagramPacket, int TTL) {
 		try {
 			setTTL(TTL);
-			socket.send(datagramPacket);
+			sendSocket.send(datagramPacket);
 		} catch (IOException e) {
 			shutdown(true);
 			return false;

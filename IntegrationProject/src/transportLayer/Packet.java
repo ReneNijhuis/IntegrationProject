@@ -317,7 +317,10 @@ public class Packet {
 		}	
 	}
 	
-	public DatagramPacket toDatagram() {
+	public DatagramPacket toDatagram() throws MalformedPacketException {
+		if (signature == null) {
+			throw new MalformedPacketException("Packet not signed! Please sign packet first.");
+		}
 		byte[] datagramData = combineToByteArray(true);
 		return new DatagramPacket(datagramData, datagramData.length, destination, port);
 	}

@@ -77,7 +77,12 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 			PrintUtil.printTextln(message, true, true);
 			message = "";
 			packet.updateSignature(key);
-			succes = client.sendPacket(packet);
+			try {
+				succes = client.sendPacket(packet);
+			} catch (MalformedPacketException e) {
+				// Problems
+				e.printStackTrace();
+			}
 		}	
 		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", false, 1);
 		message += "\n";
@@ -101,7 +106,7 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 			message += PrintUtil.START + "DROP - hash(checksum)\n";	
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
-			message += PrintUtil.START + "DROP - src\n";	
+			message += PrintUtil.START + "DROP - src\n";
 		} else if (dest.equals(ownAddress) || dest.equals(client.MULTICAST_ADDR)) {
 			// read packet, not forward
 			message += PrintUtil.START + "READ, NOT FORWARD\n";	
@@ -115,6 +120,7 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 						message += handleAction(packet, rule.getAct());
 						break;
 					}
+					message += PrintUtil.START + "DROP, no rule\n";	
 				}
 			}	
 		}
@@ -128,10 +134,14 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		if (act.equals(ForwardAction.FORWARD_READ)) {
 			message += PrintUtil.START + "READ AND FORWARD\n";
 			notifyObservers(packet);
-			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));		
+			try {
+				client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));
+			} catch (MalformedPacketException e) {}		
 		} else if (act.equals(ForwardAction.FORWARD_NOT_READ)) {
 			message += PrintUtil.START + "NOT READ, FORWARD\n";
-			client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));	
+			try {
+				client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));
+			} catch (MalformedPacketException e) {}	
 		} else if (act.equals(ForwardAction.NOT_FORWARD_READ)) {
 			message += PrintUtil.START + "READ, NOT FORWARD\n";
 			notifyObservers(packet);

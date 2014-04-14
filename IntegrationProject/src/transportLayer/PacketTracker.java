@@ -1,7 +1,7 @@
 package transportLayer;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Observable;
@@ -12,6 +12,10 @@ public class PacketTracker extends Observable implements NetworkLayer {
 
 	public static final byte MAX_PENDING_PACKETS = 5;
 	public static final byte MAX_SENT_TIMES = 20;
+	public static final short TIMEOUT = 1000;
+	
+	private static final byte[] FIN_IN_DATA = new byte[] {-1, -1, -1}; 
+	private static final byte[] FINACK_IN_DATA = new byte[] {-1, 0, -1};
 	
 	private PacketRouter router;
 	private InetAddress connectionAddress;
@@ -21,7 +25,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	
 	private short trackNr;
 	private short expectedNr;
-		
+	
 	private LinkedBlockingQueue<byte[]> dataBuffer = new LinkedBlockingQueue<byte[]>();
 	private LinkedHashMap<Short, TraceablePacket> pendingPackets = 
 			new LinkedHashMap<Short, TraceablePacket>();
@@ -45,10 +49,10 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		
 		boolean couldSend = true;
 		//if less than 5 packets are pending, send but not acknowledged, send it else buffer it 
-		if (pendingPackets.keySet().size() < MAX_PENDING_PACKETS){
+		if (pendingPackets.size() < MAX_PENDING_PACKETS){
 			pendingPackets.put(trackNr, tp);
 			timesSent.put(trackNr, (byte) 1);
-			pendingTime.put(trackNr, System.currentTimeMillis());
+			pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
 			couldSend = router.sendPacket(sendablePacket);
 			trackNr = increaseValue(trackNr);
 		} else {
@@ -112,7 +116,42 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	}
 
 	private void processReceivedAck(TraceablePacket tp) {
-		// TODO Auto-generated method stub
+		if (Arrays.equals(tp.getData(), new byte[0])) {
+			pendingPackets.remove(decreaseValue(tp.getNextExpectedNr()));
+			pendingTime.remove(decreaseValue(tp.getNextExpectedNr()));
+			timesSent.remove(decreaseValue(tp.getNextExpectedNr()));
+			byte[] dataToSend = dataBuffer.poll();
+			if (dataToSend != null) {
+				ControlFlag flag = ControlFlag.ACK;
+				byte[] firstThreeDataBytes = new byte[3];
+				for (int i = 0; i < 3; i++) {
+					firstThreeDataBytes[i] = dataToSend[i];
+				}
+				if (Arrays.equals(firstThreeDataBytes, FIN_IN_DATA)) {
+					flag = ControlFlag.FIN;
+				} else if (Arrays.equals(firstThreeDataBytes, FINACK_IN_DATA)) {
+					flag = ControlFlag.FIN_ACK;
+				}
+
+				TraceablePacket packetToSend = new TraceablePacket(trackNr, expectedNr, flag, dataToSend);
+				Packet sendablePacket = new Packet(connectionAddress, packetToSend.toByteArray());
+				pendingPackets.put(trackNr, packetToSend);
+				timesSent.put(trackNr, (byte) 1);
+				pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
+				router.sendPacket(sendablePacket);
+				trackNr = increaseValue(trackNr);
+			}
+		} else {
+			if (tp.getTrackNr() == expectedNr) {
+				expectedNr = increaseValue(expectedNr);
+				notifyObservers(tp.getData());
+			}
+			TraceablePacket ackPacket = new TraceablePacket(trackNr, expectedNr, new byte[0]);
+			Packet sendablePacket = new Packet(connectionAddress, ackPacket.toByteArray());
+			router.sendPacket(sendablePacket);
+			trackNr = increaseValue(trackNr);
+		}
+		
 		
 	}
 
@@ -157,14 +196,46 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		if (pendingTime.containsValue(time)) {
 			Entry<Short, Long>[] pendingEntries = 
 					(Entry<Short, Long>[]) pendingTime.entrySet().toArray();
-			short[] trackNrsToResend = new short[pendingEntries.length];
 			for (int i = 0; i < pendingEntries.length; i++) {
 				Entry<Short, Long> e = pendingEntries[i];
 				if (e.getValue() <= time) {
-					trackNrsToResend[i] = e.getKey();
+					short trackNrToResend = e.getKey();
+					if (timesSent.get(trackNrToResend) <= MAX_SENT_TIMES) {
+						TraceablePacket packetToResend = pendingPackets.get(trackNrToResend);
+						Packet sendablePacket = new Packet(connectionAddress, packetToResend.toByteArray());
+						pendingPackets.put(trackNrToResend, packetToResend);
+						pendingTime.put(trackNrToResend, System.currentTimeMillis() + TIMEOUT);
+						timesSent.put(trackNrToResend, (byte) (timesSent.get(trackNrToResend) + 1));
+						router.sendPacket(sendablePacket);
+					} else {
+						notifyObservers("CONNECTION_LOST");
+						shutDown(true, false);
+					}
 				}
+			}			
+		}
+		if (pendingPackets.size() < 5) {
+			byte[] dataToSend = dataBuffer.poll();
+			if (dataToSend != null) {
+				ControlFlag flag = ControlFlag.ACK;
+				byte[] firstThreeDataBytes = new byte[3];
+				for (int i = 0; i < 3; i++) {
+					firstThreeDataBytes[i] = dataToSend[i];
+				}
+				if (Arrays.equals(firstThreeDataBytes, FIN_IN_DATA)) {
+					flag = ControlFlag.FIN;
+				} else if (Arrays.equals(firstThreeDataBytes, FINACK_IN_DATA)) {
+					flag = ControlFlag.FIN_ACK;
+				}
+
+				TraceablePacket packetToSend = new TraceablePacket(trackNr, expectedNr, flag, dataToSend);
+				Packet sendablePacket = new Packet(connectionAddress, packetToSend.toByteArray());
+				pendingPackets.put(trackNr, packetToSend);
+				timesSent.put(trackNr, (byte) 1);
+				pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
+				router.sendPacket(sendablePacket);
+				trackNr = increaseValue(trackNr);
 			}
-			
 		}
 		
 	}
@@ -234,7 +305,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				router.sendPacket(sendablePacket);
 				trackNr = increaseValue(trackNr);
 			} else {
-				dataBuffer.add(new byte[] {-1, -1, -1});
+				dataBuffer.add(FIN_IN_DATA);
 			}
 		} else {
 			TraceablePacket finAck = new TraceablePacket(trackNr, expectedNr, ControlFlag.FIN_ACK, new byte[0]);
@@ -246,7 +317,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				router.sendPacket(sendablePacket);
 				trackNr = increaseValue(trackNr);
 			} else {
-				dataBuffer.add(new byte[] {-1, 0, -1});
+				dataBuffer.add(FINACK_IN_DATA);
 			}
 		}
 		

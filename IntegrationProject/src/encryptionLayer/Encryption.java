@@ -113,30 +113,33 @@ public class Encryption {
 		return multiByte(newbytes);
 	}
 
-	public String decrypt(byte[] ciphertext){
-		byte[] paddingremoved = removePaddingAmount(ciphertext);
-
-		byte[][] bit = dividePlainText(paddingremoved);
-		byte[][] plaintext = new byte[bit.length][8];
-		byte[] invector = iv;
-		for (int i = 0; i < bit.length ; i++){
-			invector = encryptByteArray(key,invector);
-			plaintext[i] = encryptByteArray(invector,bit[i]);
-		}
-		byte[] returnthis = removePadding(multiByte(plaintext),(int) ciphertext[0]);
-		byte[] randombyteremoved = new byte[returnthis.length-1];
-		for (int i = 0; i < randombyteremoved.length; i++){
-			randombyteremoved[i] = returnthis[i+1];
-		}
-		int randomIndentifyer = (int) returnthis[0];
-		if (!receivedIntegers.contains(randomIndentifyer)){
-			receivedIntegers.add(randomIndentifyer);
-			if (receivedIntegers.size() == 50){
-				receivedIntegers = new ArrayList<Integer>();
+	public String decrypt(byte[] ciphertext) throws MalformedCipherTextException{
+		try { 
+			byte[] paddingremoved = removePaddingAmount(ciphertext);
+	
+			byte[][] bit = dividePlainText(paddingremoved);
+			byte[][] plaintext = new byte[bit.length][8];
+			byte[] invector = iv;
+			for (int i = 0; i < bit.length ; i++){
+				invector = encryptByteArray(key,invector);
+				plaintext[i] = encryptByteArray(invector,bit[i]);
 			}
-			return new String(randombyteremoved);
+			byte[] returnthis = removePadding(multiByte(plaintext),(int) ciphertext[0]);
+			byte[] randombyteremoved = new byte[returnthis.length-1];
+			for (int i = 0; i < randombyteremoved.length; i++){
+				randombyteremoved[i] = returnthis[i+1];
+			}
+			int randomIndentifyer = (int) returnthis[0];
+			if (!receivedIntegers.contains(randomIndentifyer)){
+				receivedIntegers.add(randomIndentifyer);
+				if (receivedIntegers.size() == 50){
+					receivedIntegers = new ArrayList<Integer>();
+				}
+				return new String(randombyteremoved);
+			}
+		} catch (Exception e) {
+			throw new MalformedCipherTextException("Ciphertext malformed!");
 		}
-		return null;
 	}
 
 	public byte[] removePadding (byte[] paddedbytes, int amountpadding){

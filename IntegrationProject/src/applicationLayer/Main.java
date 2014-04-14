@@ -9,11 +9,13 @@ import java.util.Observable;
 import java.util.Observer;
 
 import tools.PrintUtil;
+import transportLayer.ChatPacket;
 import transportLayer.GetIp;
 import transportLayer.MalformedPacketException;
 import transportLayer.Packet;
 import transportLayer.PacketRouter;
 import transportLayer.PacketTracker;
+import transportLayer.PacketType;
 import transportLayer.RoutingProtocol;
 import connectionLayer.InternetProtocol;
 import encryptionLayer.Encryption;
@@ -30,6 +32,8 @@ public class Main implements Observer {
 	private PacketRouter router;
 	private PacketTracker tcp;
 	private RoutingProtocol routing;
+	
+	private boolean multiChat = true;
 	
 	private Encryption encryptor;
 	private String name;
@@ -52,10 +56,21 @@ public class Main implements Observer {
 	 * @return whether successful or not
 	 */
 	public boolean sendMessage(String message) {
-		ChatMessage fullMessage = new ChatMessage(name, message);
-		mainUI.addMessage(fullMessage);
-		byte[] cipherText = encryptor.encrypt(fullMessage.toString().getBytes());
-		return router.sendPacket(Packet.generatePacket(cipherText));	
+		PacketType type;
+		if (multiChat) {
+			type = PacketType.CHAT_PUBL;
+		} else {
+			type = PacketType.CHAT_PRIV;
+		}
+		ChatPacket chatPacket = new ChatPacket(type, name, message);
+		byte[] cipherText = encryptor.encrypt(chatPacket.toString().getBytes());
+		boolean succes = router.sendPacket(Packet.generatePacket(cipherText));	
+		if (succes) {
+			mainUI.addMessage(name, message);
+		} else {
+			mainUI.addPopup("Delivery failure", "Could not send message", true);
+		}
+		return succes;
 	}
 	
 	public static void main(String[] args) {
@@ -84,9 +99,9 @@ public class Main implements Observer {
 			byte[] msg = ((Packet)arg).getPacketData();
 			System.out.println(Arrays.toString(msg));
 			try {
-				ChatMessage fullMessage = new ChatMessage(encryptor.decrypt(msg));
-				mainUI.addMessage(fullMessage);
-			} catch (ArrayIndexOutOfBoundsException e) {
+				ChatPacket packet = new ChatPacket(encryptor.decrypt(msg));
+				mainUI.addMessage(packet.getSenderName(), packet.getMessage());
+			} catch (Exception e) {
 				//TODO PrintUtil.genHeader("Application", "got message", true, 0);
 				// drop packet
 			}
@@ -133,7 +148,7 @@ public class Main implements Observer {
 	 * Really login
 	 */
 	public void login() {
-		//mainUI.setVisible(true);
+		mainUI.setVisible(true);
 	}
 	
 	/**
@@ -156,6 +171,8 @@ public class Main implements Observer {
 		router.deleteObserver(this);
 		if (userDestruct) {
 			router.shutDown(false, true);	
+		} else {
+			mainUI.dispose();
 		}
 	}
 }

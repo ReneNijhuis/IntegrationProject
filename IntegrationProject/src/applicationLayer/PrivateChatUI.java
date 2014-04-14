@@ -225,25 +225,24 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		setResizable(true);
 	}
 	
-	public void addMessage(String name, String message) {
-		textarea1.append(name + ":\t" + message + "\n");		
+	public void addMessage(ChatMessage fullMessage) {
+		textarea1.append(fullMessage.toString() + "\n");		
 	}
 	
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
-		if (arg0.getSource() == button1) {
-			sendMessage(textfield1.getText());
-		}
-	}
-	
-	private void sendMessage(String message) {
-		if (sendEnabled 
-				&& !message.equals("Input text here:") 
-				&& main.sendMessage(message)
-			) {
-			textfield1.setText("");
-			sendEnabled = false;
-			updateSendButton();
+		if (arg0.getSource() == button1){
+			String message = textfield1.getText();
+			if (!message.equals("Input text here:")){
+				textfield1.setText("");
+				sendEnabled = false;
+				updateSendButton();
+				if (!main.sendMessage(message)) {
+					addPopup("Network error", "Network not available, please connect and restart", true);
+					main.shutDown(false);
+					setVisible(false);
+				}
+			}
 		}
 	}
 
@@ -253,7 +252,15 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		if ((c = e.getKeyChar()) != KeyEvent.CHAR_UNDEFINED) {
 			if (e.getSource().equals(textfield1)) {
 				if (c == '\n') {
-					sendMessage(textfield1.getText());
+					if (sendEnabled) {
+						String message = textfield1.getText();
+						if (!message.equals("Input text here:")) {
+							main.sendMessage(message);
+							textfield1.setText("");
+							sendEnabled = false;
+							updateSendButton();
+						}
+					}
 				} else {	
 					if (isLetterOrNumber(c)) {
 						sendEnabled = true;

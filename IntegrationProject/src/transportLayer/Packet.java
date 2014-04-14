@@ -32,6 +32,7 @@ public class Packet {
 	private byte[] hash;			   // hash of headers and data with ttl = 0;
 	private byte[] data;			   // actual data
 	private InetAddress currentSource; // the current broadcaster of this packet
+	//private InetAddress
 	
 	private static final InetAddress errSource = null; 		   		// error value
 	private static final InetAddress errDestination = null;    		// error value
@@ -164,7 +165,7 @@ public class Packet {
 	public Packet(InetAddress destination, byte[] data) {
 		try {
 			this.destination = destination;
-			currentSource = InetAddress.getLocalHost();
+			currentSource = ;
 			source = InetAddress.getLocalHost();
 		} catch (UnknownHostException e) {
 			// will probably never happen

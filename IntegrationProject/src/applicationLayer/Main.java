@@ -8,10 +8,12 @@ import java.util.Arrays;
 import java.util.Observable;
 import java.util.Observer;
 
+import transportLayer.GetIp;
 import transportLayer.MalformedPacketException;
 import transportLayer.Packet;
 import transportLayer.PacketRouter;
 import transportLayer.PacketTracker;
+import transportLayer.RoutingProtocol;
 import connectionLayer.InternetProtocol;
 import encryptionLayer.Encryption;
 
@@ -26,11 +28,14 @@ public class Main implements Observer {
 	private LoginGUI loginUI;
 	private PacketRouter router;
 	private PacketTracker tcp;
+	private RoutingProtocol routing;
 	
 	private Encryption encryptor;
 	private String name;
 	private byte[] pass;
 	private byte[] iv;
+	
+	public InetAddress ip;
 	
 	public Main() {
 		// start LoginGUI
@@ -101,10 +106,16 @@ public class Main implements Observer {
 		// start Ad-Hoc-client
 		InternetProtocol client = new InternetProtocol();
 		client.start();
+		// get local ip
+		GetIp getIp = new GetIp(client);
+		ip = getIp.getCurrentIp();
 		// start packet-router
 		router = new PacketRouter(client, this.pass);
 		router.addObserver(this);
 		router.start();	
+		// start routing protocol
+		routing = new RoutingProtocol(router, ip);
+		routing.start();
 		// start Packet-tracker (our kind of TCP)
 		//TODO tcp = new PacketTracker(router);
 		//TODO tcp.start();

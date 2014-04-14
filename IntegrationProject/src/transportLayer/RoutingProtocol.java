@@ -13,12 +13,13 @@ import connectionLayer.InternetProtocol;
 
 public class RoutingProtocol implements Observer {
 
-	public static final int HEARTBEAT_INTERVAL = 100; //ms
-
+	public static final int HEARTBEAT_INTERVAL = 0; //ms
+	private static final String HEARTBEAT_MESSAGE = "Secretkey=Kaviaar";
+	private static final byte[] HEARTBEAT_MESSAGE_BYTES = HEARTBEAT_MESSAGE.getBytes();
+	
 	private Map<InetAddress, Integer> hopsPerNode = new HashMap<InetAddress, Integer>(); //routing table
 	private Map<InetAddress, Long> directLinks = new HashMap<InetAddress, Long>(); //map with 1 hops links
 	private List<InetAddress> inetaddresses = new ArrayList<InetAddress>(); //all registered addresses
-	private byte[] HBData; //data to be sent in heartbeat packets
 	private byte[] MapData; //routing table as byte[] to be sent
 	private Map<InetAddress, Integer> receivedHopsPerNode = new HashMap<InetAddress, Integer>();//received routing table
 	private byte[] receivedData; //received table as byte[]
@@ -34,19 +35,11 @@ public class RoutingProtocol implements Observer {
 	}
 
 	/**
-	 * fills the HBData with the string as byte[] used for heartbeats
-	 */
-	public void fillHB() {
-		String string = "Kaviaar";
-		HBData = string.getBytes();
-	}
-	/**
-	 * send a hearbeat packet
+	 * Send a hearbeat packet
 	 */
 	public void heartBeat() {
-		fillHB();
 		try {
-			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 1, HBData));
+			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 1, HEARTBEAT_MESSAGE_BYTES));
 		} catch (UnknownHostException | MalformedPacketException e) {}
 	}
 
@@ -59,7 +52,7 @@ public class RoutingProtocol implements Observer {
 	}
 
 	public void sendDelete(InetAddress removedIP) {
-		byte[] DelIPData = new String("Delete"+removedIP.toString()).getBytes();
+		byte[] DelIPData = new String("Delete" + removedIP.toString()).getBytes();
 		try {
 			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 3, DelIPData));
 		} catch (UnknownHostException | MalformedPacketException e) {}
@@ -153,7 +146,7 @@ public class RoutingProtocol implements Observer {
 					}
 				}
 			}
-			if(new String(packet.getPacketData()).contains("Kaviaar")){
+			if(new String(packet.getPacketData()).contains(HEARTBEAT_MESSAGE)){
 				if (!inetaddresses.contains(packet.getCurrentSource())){
 					inetaddresses.add(packet.getCurrentSource());
 					updatereceived = true;

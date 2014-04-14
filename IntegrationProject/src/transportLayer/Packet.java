@@ -165,7 +165,7 @@ public class Packet {
 	public Packet(InetAddress destination, byte[] data) {
 		try {
 			this.destination = destination;
-			currentSource = ;
+			currentSource = InetAddress.getLocalHost();
 			source = InetAddress.getLocalHost();
 		} catch (UnknownHostException e) {
 			// will probably never happen

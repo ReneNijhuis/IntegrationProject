@@ -116,7 +116,7 @@ public class Main implements Observer {
 		// start routing protocol
 		routing = new RoutingProtocol(router, ip);
 		routing.start();
-		// start Packet-tracker (our kind of TCP)
+		// start Packet-tracker (our kind of TCP)//
 		//TODO tcp = new PacketTracker(router);
 		//TODO tcp.start();
 		return true;

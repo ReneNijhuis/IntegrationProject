@@ -22,12 +22,15 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 	private InternetProtocol client;
 	private InetAddress ownAddress;	
 	private byte[] key; // used for signing packets
-	//TODO add support for currentDestination
 	private ArrayList<ForwardRule> routingTable;
+	private InetAddress bcAddr;
 	
 	public PacketRouter(InternetProtocol client, byte[] key) {
 		this.client = client;
 		this.key = key;
+		try {
+			bcAddr = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
+		} catch (UnknownHostException e) {}
 		routingTable = new ArrayList<ForwardRule>();
 		try {
 			ownAddress = InetAddress.getLocalHost();
@@ -57,11 +60,12 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 	public boolean sendPacket(Packet packet) {
 		InetAddress src = packet.getSource();
 		InetAddress dest = packet.getDestination();
+		InetAddress currDest = packet.getCurrentDestination();
 		int ttl = packet.getTTL();
 		boolean succes = false;
 		
 		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", true, 1);
-		message += PrintUtil.genDataLine(" Action: ", 1, false);
+		message += PrintUtil.genDataLine("Action: ", 1, false);
 		if (ttl == 0) {
 			// drop packet
 			message += PrintUtil.START + " DROP - TTL\n";	
@@ -71,6 +75,9 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (dest.equals(ownAddress)) {
 			// drop packet
 			message += PrintUtil.START + " DROP - dest\n";
+		} else if (!currDest.equals(bcAddr)) {
+			// drop packet
+			message += PrintUtil.START + " DROP - curr dest\n";
 		} else {
 			// forward packet
 			message += PrintUtil.START + " FORWARD\n";
@@ -93,6 +100,7 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 	private void handlePacket(Packet packet) {
 		InetAddress src = packet.getSource();
 		InetAddress dest = packet.getDestination();
+		InetAddress currDest = packet.getCurrentDestination();
 		int ttl = packet.getTTL();
 		
 		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "received", true, 1);

@@ -21,7 +21,7 @@ import tools.PrintUtil;
  */
 public class Packet {
 
-	private static final int HEADER_LENGTH = 73;
+	private static final int HEADER_LENGTH = 77;
 	private static final int IP_LENGTH = 4;
 	private static final int SECURITY_LENGTH = 32;
 	
@@ -93,11 +93,7 @@ public class Packet {
 	
 	public Packet(InetAddress currentSource, InetAddress source, InetAddress destination, short TTL, byte[] data) throws MalformedPacketException {
 		boolean wrongArguments = false;
-		try {
-			currentDestination = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
-		} catch (UnknownHostException e) {
-			// will not happen
-		}
+		currentDestination = getBroadcastAddress();
 		String errorMessage = "";
 		if (currentSource == null) {
 			wrongArguments = true;
@@ -135,7 +131,7 @@ public class Packet {
 		try {
 			currentSource = InetAddress.getLocalHost();
 			source = InetAddress.getLocalHost();
-			currentDestination = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
+			currentDestination = getBroadcastAddress();
 			this.destination = destination;
 		} catch (UnknownHostException e) {
 			// will probably never happen
@@ -170,7 +166,7 @@ public class Packet {
 		return source;
 	}
 	
-	private InetAddress getCurrentDestination() {
+	public InetAddress getCurrentDestination() {
 		return currentDestination;
 	}
 	
@@ -236,7 +232,6 @@ public class Packet {
 	 * @return the answer Packet
 	 */
 	public static Packet generateAnswer(Packet packet, byte[] data) {
-		//TODO
 		Packet answer = new Packet(packet);
 		try {
 			answer.setCurrentSource(InetAddress.getLocalHost());
@@ -258,7 +253,6 @@ public class Packet {
 	 * @return the forward Packet
 	 */
 	public static Packet generateForward(Packet packet, byte[] data) {
-		//TODO
 		Packet answer = new Packet(packet);
 		try {
 			answer.setCurrentSource(InetAddress.getLocalHost());
@@ -273,26 +267,39 @@ public class Packet {
 	/**
 	 * Generates a general-multicast-packet.
 	 * The currentSource and source will be set to the IP of this computer.
-	 * The destination and port will be InternetProtocol.MULTICAST_ADDRESS and 
-	 * InternetProtocol.MULTICAST_PORT respectively.
+	 * The (current)destination and port will be InternetProtocol.MULTICAST_ADDRESS 
+	 * and InternetProtocol.MULTICAST_PORT respectively.
 	 * 
 	 * @param data to use
 	 * @return the test Packet
 	 */
 	public static Packet generatePacket(byte[] data) {
-		//TODO
+		return generatePacket(data, defTTL);
+	}
+	
+	/**
+	 * Generates a general-multicast-packet.
+	 * The currentSource and source will be set to the IP of this computer.
+	 * The (current)destination and port will be InternetProtocol.MULTICAST_ADDRESS 
+	 * and InternetProtocol.MULTICAST_PORT respectively.
+	 * 
+	 * @param data to use
+	 * @param ttl of packet
+	 * @return the test Packet
+	 */
+	public static Packet generatePacket(byte[] data, short ttl) {
 		InetAddress currentSource;
 		InetAddress source;
 		InetAddress destination;
 		try {
 			currentSource = InetAddress.getLocalHost();
 			source = InetAddress.getLocalHost();
-			destination = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
+			destination = getBroadcastAddress();
 		} catch (UnknownHostException e) {
 			// will probably never happen
 			return null;
 		}
-		short TTL = defTTL;
+		short TTL = ttl;
 		try {
 			return new Packet(currentSource, source, destination, TTL, data);
 		} catch (MalformedPacketException e) {
@@ -360,10 +367,11 @@ public class Packet {
 	
 	private byte[] combineToByteArray(boolean addSignAndHash) {
 		byte[] array = new byte[data.length + HEADER_LENGTH];
-		//TODO
+		
 		// convert variables into byte (arrays)
 		byte[] srcBytes = source.getAddress();
 		byte[] destBytes = destination.getAddress();
+		byte[] currentDestBytes = currentDestination.getAddress();
 		byte[] ttlByte = addSignAndHash ? new byte[]{(byte)TTL} : new byte[1];
 		byte[] hashBytes = addSignAndHash ? hash : new byte[32];
 		byte[] signBytes = addSignAndHash ? signature : new byte[32];
@@ -374,6 +382,8 @@ public class Packet {
 		index += srcBytes.length;
 		System.arraycopy(destBytes, 0, array, index, destBytes.length);
 		index += destBytes.length;
+		System.arraycopy(currentDestBytes, 0, array, index, currentDestBytes.length);
+		index += currentDestBytes.length;
 		System.arraycopy(ttlByte, 0, array, index, 1);
 		index += ttlByte.length;
 		System.arraycopy(signBytes, 0, array, index, signBytes.length);
@@ -381,16 +391,25 @@ public class Packet {
 		System.arraycopy(hashBytes, 0, array, index, hashBytes.length);
 		index += hashBytes.length;
 		System.arraycopy(data, 0, array, index, data.length);
-		
 		return array;
+	}
+	
+	public static InetAddress getBroadcastAddress() {
+		InetAddress bcAddr = null;
+		try {
+			bcAddr = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
+		} catch (UnknownHostException e) {
+			// will not happen
+		}
+		return bcAddr;
 	}
 	
 	@Override
 	public String toString() {	
-		//TODO
 		String returner = PrintUtil.START + PrintUtil.genHeader("Packet", "", true, 3);
 		returner += PrintUtil.genDataLine("Current source: " + currentSource, 3);
 		returner += PrintUtil.genDataLine("Source: " + source , 3);
+		returner += PrintUtil.genDataLine("Current destination: " + currentDestination, 3);
 		returner += PrintUtil.genDataLine("Destination: " + destination, 3);
 		returner += PrintUtil.genDataLine("Port: " + port, 3);
 		returner += PrintUtil.genDataLine("TTL: " + TTL, 3);

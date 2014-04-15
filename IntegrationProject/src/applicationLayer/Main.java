@@ -159,7 +159,7 @@ public class Main implements Observer {
 		// generate iv (hash of hash of password
 		iv = createHash(this.pass);
 		// create public encryptor
-		privEncryptor = new Encryption(this.pass, iv);
+		publEncryptor = new Encryption(this.pass, iv);
 		// start Ad-Hoc-client
 		InternetProtocol client = new InternetProtocol();
 		client.start();

@@ -40,8 +40,8 @@ public class RoutingProtocol implements Observer {
 	 * Send a hearbeat packet
 	 */
 	public void heartBeat() {
-		byte[] toSend = new byte[HEARTBEAT_MESSAGE_BYTES.length];
-		for(int i = 0; i < toSend.length; i ++){
+		byte[] toSend = new byte[HEARTBEAT_MESSAGE_BYTES.length+1];
+		for(int i = 0; i < toSend.length-1; i ++){
 			toSend[i + 1] = HEARTBEAT_MESSAGE_BYTES[i];
 		}
 		toSend[0] = packetByte;

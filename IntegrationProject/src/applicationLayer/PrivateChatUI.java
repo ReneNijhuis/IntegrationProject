@@ -32,25 +32,28 @@ import javax.swing.border.LineBorder;
 
 public class PrivateChatUI extends JFrame implements KeyListener, ActionListener{ // <-- should extend JFrame: easier and more clear implementation
 	private static final long serialVersionUID = 5488009698932086488L;
-	
+
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	private int windowWidth = (int)(screenSize.width * 0.75d);
 	private int windowHeight = (int)(windowWidth / 1280 * 800);
 	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
-	
+
 	private final Main main;
-	
+
 	private boolean sendEnabled = false;
-	
+
 	private JTextField textfield1 = new JTextField();
 	private JTextArea textarea1 = new JTextArea();
 	private JTextArea textarea2 = new JTextArea();
 	private JButton button1 = new JButton();
 	private JPanel panel1 = new JPanel(new GridBagLayout());
-	
+	private JMenuItem helpItem = new JMenuItem("Help");
+	private JMenuItem priveChatItem = new JMenuItem("Switch");
+	private JMenuItem logOutItem = new JMenuItem("Logout");
+
 	private int margin = 10;
 	private Insets insets = new Insets(margin, margin, margin, margin);
-	
+
 	public PrivateChatUI(Main main){
 		super("Chatbox");
 		this.main = main;
@@ -65,11 +68,11 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		setSize(windowSize);
 		setWindowLocation();
 		createInterface();
-		setVisible(true);
+		setVisible(false);
 	}
 
 	public void createInterface(){
-				
+
 		textarea1.setEditable(false);
 		textarea2.setEditable(false);		
 
@@ -80,7 +83,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		GridBagConstraints con5 = new GridBagConstraints();
 		GridBagConstraints con6 = new GridBagConstraints();
 		GridBagConstraints con7 = new GridBagConstraints();
-		
+
 		con1.fill = GridBagConstraints.BOTH;
 		con1.gridx = 0;
 		con1.gridy = 1;
@@ -120,7 +123,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		con5.gridx = 0;
 		con5.gridy = 0;
 		con5.ipady = (int) (windowHeight / 17);
-				
+
 		con6.fill = GridBagConstraints.BOTH;
 		con6.weightx = 1.0;
 		con6.weighty = 1.0;
@@ -129,45 +132,25 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		con6.ipady = (int) (windowHeight / 5);
 		con6.ipadx = (int) (windowWidth / 4.5);
 		con6.insets = insets;
-		
+
 		con7.fill = GridBagConstraints.BOTH;
 		con7.weightx = 1.0;
 		con7.weighty = 1.0;
 		con7.gridx = 0;
 		con7.gridy = 0;
-		
+
 		JMenuBar menuBar = new JMenuBar();
 		JMenu optionMenu = new JMenu("Options");
-		JMenuItem helpItem = new JMenuItem("Help");
-		helpItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addPopup("Help", 
-						"You are now using private chat.\nAll messages that are send will be distributed to only the other chatmember.\n", false
-						);
-			}});
+
+		helpItem.addActionListener(this);
 		optionMenu.add(helpItem);
-		JMenuItem priveChatItem = new JMenuItem("Switch");
-		priveChatItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addPopup("Switch", 
-						"Switch from chat mode.\n", false
-						);
-			}});
+		priveChatItem.addActionListener(this);
 		optionMenu.add(priveChatItem);
-		JMenuItem logOutItem = new JMenuItem("Logout");
-		logOutItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addPopup("Logout", 
-						"Click here to logout.\n", false
-						);
-			}});
+		logOutItem.addActionListener(this);
 		optionMenu.add(logOutItem);
 		menuBar.add(optionMenu);
 		setJMenuBar(menuBar);
-		
+
 		Border border1 = new LineBorder(new Color(34,220,214), 6 ,false);
 		textarea1.setBorder(border1);
 		textarea1.setFont(new Font("Calibri", Font.ITALIC, 22));
@@ -212,35 +195,46 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 				textfield1.setText("");
 				textfield1.removeMouseListener(this);
 			}};
-		textfield1.addMouseListener(myListener);
-		textfield1.addKeyListener(this);
-		textfield1.setFont(new Font("Calibri", Font.ITALIC, 22));
+			textfield1.addMouseListener(myListener);
+			textfield1.addKeyListener(this);
+			textfield1.setFont(new Font("Calibri", Font.ITALIC, 22));
 
-		JPanel listPane3 = new JPanel();
-		listPane3.setLayout(new BoxLayout(listPane3, BoxLayout.PAGE_AXIS));
-		listPane3.add(textfield1);
-		panel1.add(listPane3,con4);
-		panel1.setBackground(new Color(34,169,220));
-		add(panel1);
-		setResizable(true);
+			JPanel listPane3 = new JPanel();
+			listPane3.setLayout(new BoxLayout(listPane3, BoxLayout.PAGE_AXIS));
+			listPane3.add(textfield1);
+			panel1.add(listPane3,con4);
+			panel1.setBackground(new Color(34,169,220));
+			add(panel1);
+			setResizable(true);
+			setVisible(false);
 	}
-	
+
 	public void addMessage(String name, String message) {
 		textarea1.append(name + ":\t" + message + "\n");		
 	}
-	
+
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		if (arg0.getSource() == button1) {
 			sendMessage(textfield1.getText());
 		}
+		else if (arg0.getSource() == priveChatItem){
+			if (addQuestion("","Do you want to switch back to group chat?",false)){
+				main.toPublic();
+			}
+		}
+		else if (arg0.getSource() == logOutItem){
+			if (addQuestion("","Do you want to log out?",false)){
+				main.logout();
+			}
+		}
 	}
-	
+
 	private void sendMessage(String message) {
 		if (sendEnabled 
 				&& !message.equals("Input text here:") 
 				&& main.sendMessage(message)
-			) {
+				) {
 			textfield1.setText("");
 			sendEnabled = false;
 			updateSendButton();
@@ -279,7 +273,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 			button1.setEnabled(false);
 		}
 	}
-	
+
 	private boolean containsLetterOrNumber(String s) {
 		for (char c : s.toCharArray()) {
 			if (isLetterOrNumber(c)) {
@@ -288,30 +282,41 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		}
 		return false;
 	}
-	
+
 	private boolean isLetterOrNumber(char c) {
 		return Character.isLetter(c) || Character.isDigit(c);
 	}
-	
+
 	/**
 	 * Centers the window on the screen.
 	 */
 	private void setWindowLocation() {
 		setMinimumSize(new Dimension(1100,700));
 		setLocation(
-		(int)(screenSize.getWidth() / 2 - windowSize.width / 2),
-		(int)(screenSize.getHeight() / 2 - windowSize.height / 2)
-		);
+				(int)(screenSize.getWidth() / 2 - windowSize.width / 2),
+				(int)(screenSize.getHeight() / 2 - windowSize.height / 2)
+				);
 	}
-	
+
 	public void addPopup(String title, String message, boolean warning) {
 		if (!warning) {
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
 		} else {
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
 		}
-
 	}
-	public static void main(String[] args) {
-		PrivateChatUI mu = new PrivateChatUI(null);
-	}}
+	
+	public void setCompagionName(String name){
+		textarea2.append(name);
+	}
+
+	public boolean addQuestion(String title, String message, boolean warning) {
+		int selection = JOptionPane.showConfirmDialog(null, message, title
+				, JOptionPane.OK_CANCEL_OPTION
+				, JOptionPane.INFORMATION_MESSAGE);
+		if (selection == JOptionPane.OK_OPTION)	{
+			return true;
+		}
+		return false;
+	}
+}

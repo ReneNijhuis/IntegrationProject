@@ -20,6 +20,8 @@ import java.util.ArrayList;
 
 import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.ParallelGroup;
+import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -51,11 +53,9 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private JTextArea textarea2 = new JTextArea();
 	private JButton button1 = new JButton();
 	private JPanel panel1 = new JPanel(new GridBagLayout());
+	private JMenuItem logOutItem = new JMenuItem("Logout");
 
-	private Button user1 = null;
-	private Button user2 = null;
-	private Button user3 = null;
-	private Button user4 = null;
+	private ArrayList<Button> users = new ArrayList<Button>();
 
 	private int margin = 10;
 	private Insets insets = new Insets(margin, margin, margin, margin);
@@ -74,7 +74,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		setSize(windowSize);
 		setWindowLocation();
 		createInterface();
-		setVisible(true);
+		setVisible(false);
 	}
 
 	public void getButtons(){
@@ -87,22 +87,15 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			Button butto = new Button(connectedIps.get(i));
 			butto.setFont(new Font("Calibri", Font.ITALIC, 40));
 			butto.setBackground(new Color(255,255,255));
+			butto.setMinimumSize(new Dimension(0,110));
+			butto.setMaximumSize(new Dimension(1000000,100));
 			butto.setForeground(new Color(34,121,220));
 			buttons.add(butto);
 		}
-		for (int i = 0; i < (4 - connectedIps.size()); i++){
-			Button butto = new Button("");
-			butto.setVisible(false);
-			buttons.add(butto);
+		for (int i = 0; i < buttons.size(); i++){
+			users.add(buttons.get(i));
+			buttons.get(i).addActionListener(this);
 		}
-		user1 = buttons.get(0);
-		user2 = buttons.get(1);
-		user3 = buttons.get(2);
-		user4 = buttons.get(3);
-		user1.addActionListener(this);
-		user2.addActionListener(this);
-		user3.addActionListener(this);
-		user4.addActionListener(this);
 	}
 
 	public void createInterface(){
@@ -121,7 +114,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		con1.fill = GridBagConstraints.BOTH;
 		con1.gridx = 0;
 		con1.gridy = 1;
-		con1.ipady = (int) (windowHeight / 4);
+		con1.ipady = (int) (windowHeight / 1.8);
 		con1.ipadx = (int) (windowWidth / 5);
 
 		con2.fill = GridBagConstraints.BOTH;
@@ -151,12 +144,13 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		con4.ipadx = (int) (windowWidth / 1.4);
 		con4.insets = insets;		
 
-		con5.fill = GridBagConstraints.HORIZONTAL;
+		con5.fill = GridBagConstraints.BOTH;
 		con5.weightx = 1.0;
 		con5.weighty = 1.0;
 		con5.gridx = 0;
 		con5.gridy = 0;
 		con5.ipady = (int) (windowHeight / 17);
+		con5.ipadx = (int) (windowHeight / 17);
 
 		con6.fill = GridBagConstraints.BOTH;
 		con6.weightx = 1.0;
@@ -184,7 +178,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 						);
 			}});
 		optionMenu.add(helpItem);
-		JMenuItem logOutItem = new JMenuItem("Logout");
 		logOutItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -221,35 +214,33 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		toparea.setText("Connected Devices:");
 		JPanel buttonpanel = new JPanel();
 		buttonpanel.add(textarea2);
+		JScrollPane js = new JScrollPane(buttonpanel);
 		GroupLayout layout = new GroupLayout(buttonpanel);
 		buttonpanel.setLayout(layout);
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
 		getButtons();
-		layout.setHorizontalGroup(
-				layout.createSequentialGroup()
-				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-						.addComponent(user1)
-						.addComponent(user2)
-						.addComponent(user3)
-						.addComponent(user4))
-				);
-		layout.setVerticalGroup(layout.createSequentialGroup()
-				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-						.addGroup(layout.createSequentialGroup()
-								.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-										.addComponent(user1))
-										.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-												.addComponent(user2))
-												.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-														.addComponent(user3))
-														.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-																.addComponent(user4))))
-				);
+
+		GroupLayout.SequentialGroup sgroup = layout.createSequentialGroup();
+		GroupLayout.SequentialGroup vgroup = layout.createSequentialGroup();
+		GroupLayout.SequentialGroup v2group = layout.createSequentialGroup();
+		GroupLayout.ParallelGroup pgroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+		GroupLayout.ParallelGroup p2group = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+		for (Button c : users) {
+			pgroup.addComponent(c);
+		}
+		for (Button c : users) {
+			v2group.addComponent(c);
+			v2group.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE));
+		}
+
+		layout.setHorizontalGroup(sgroup.addGroup(pgroup));
+		layout.setVerticalGroup(vgroup.addGroup(p2group.addGroup(v2group)));
+
 		JPanel insertpanel = new JPanel(new GridBagLayout());
 		insertpanel.setBackground(new Color(34,121,220));
 		insertpanel.add(toparea,con5);
-		insertpanel.add(buttonpanel,con1);
+		insertpanel.add(js,con1);
 		insertpanel.setBorder(border2);
 		panel1.add(insertpanel,con6);		
 
@@ -295,36 +286,28 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		if (arg0.getSource() == button1) {
 			sendMessage(textfield1.getText());
 		}
-
-
-		else if (arg0.getSource() == user1){
-			if (addQuestion("","Do you want to enter private chat with user "+connectedIps.get(0)+"?",false)){
-				System.out.println("Start chat with user 1");
+		else {
+			for (int i = 0; i < users.size(); i++){
+				if (arg0.getSource() == users.get(i)){
+					String password = addQuestion("","If you want to enter private chat with user "+connectedIps.get(i)+",\nEnter a password:",false);
+					if (password!=null){
+						main.toPrivate(connectedIps.get(i),password.getBytes());
+					}
+				}
 			}
 		}
-		else if (arg0.getSource() == user2){
-			if (addQuestion("","Do you want to enter private chat with user "+connectedIps.get(1)+"?",false)){
-				System.out.println("Start chat with user 2");
+		if (arg0.getSource() == logOutItem){
+			if (addConfirmation("","Do you want to log out?",false)){
+				main.logout();
 			}
 		}
-		else if (arg0.getSource() == user3){
-			if (addQuestion("","Do you want to enter private chat with user "+connectedIps.get(2)+"?",false)){
-				System.out.println("Start chat with user 3");
-			}
-		}
-		else if (arg0.getSource() == user4){
-			if (addQuestion("","Do you want to enter private chat with user "+connectedIps.get(3)+"?",false)){
-				System.out.println("Start chat with user 4");
-			}
-		}
-
 	}
-	
+
 	private void sendMessage(String message) {
 		if (sendEnabled 
 				&& !message.equals("Input text here:") 
 				&& main.sendMessage(message)
-			) {
+				) {
 			textfield1.setText("");
 			sendEnabled = false;
 			updateSendButton();
@@ -397,7 +380,25 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 
 	}
-	public boolean addQuestion(String title, String message, boolean warning) {
+	public String addQuestion(String title, String message, boolean warning) {
+
+		String s = (String)JOptionPane.showInputDialog(
+				this,
+				message,
+				title,
+				JOptionPane.PLAIN_MESSAGE,
+				null,
+				null,
+				null);
+
+		//If a string was returned, say so.
+		if ((s != null) && (s.length() > 0)) {
+			return s;
+		}
+		return null;
+	}
+
+	public boolean addConfirmation(String title, String message, boolean warning) {
 		int selection = JOptionPane.showConfirmDialog(null, message, title
 				, JOptionPane.OK_CANCEL_OPTION
 				, JOptionPane.INFORMATION_MESSAGE);
@@ -405,9 +406,5 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			return true;
 		}
 		return false;
-	}
-
-	public static void main(String[] args) {
-		new MainUI(null);
 	}
 }

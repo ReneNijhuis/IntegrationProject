@@ -42,6 +42,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	private int windowWidth = (int)(screenSize.width * 0.75d);
 	private int windowHeight = (int)(windowWidth / 1280 * 800);
+	private static final int MAX_LENGTH = 184;
 	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
 	private ArrayList<String> connectedIps = new ArrayList<String>();
 	private final Main main;
@@ -57,6 +58,13 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private JPanel buttonpanel = new JPanel();
 	private JPanel insertpanel = new JPanel();
 	private GroupLayout layout = new GroupLayout(buttonpanel);
+	private GridBagConstraints con1 = new GridBagConstraints();
+	private GridBagConstraints con2 = new GridBagConstraints();
+	private GridBagConstraints con3 = new GridBagConstraints();
+	private GridBagConstraints con4 = new GridBagConstraints();
+	private GridBagConstraints con5 = new GridBagConstraints();
+	private GridBagConstraints con6 = new GridBagConstraints();
+	private GridBagConstraints con7 = new GridBagConstraints();
 
 	private ArrayList<Button> users = new ArrayList<Button>();
 
@@ -83,49 +91,22 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	public void addUser(String name){
 		if (!connectedIps.contains(name)){
 			panel1.remove(insertpanel);
-			GridBagConstraints con6 = new GridBagConstraints();
-			con6.fill = GridBagConstraints.BOTH;
-			con6.weightx = 1.0;
-			con6.weighty = 1.0;
-			con6.gridx = 1;
-			con6.gridy = 0;
-			con6.ipady = (int) (windowHeight / 5);
-			con6.ipadx = (int) (windowWidth / 17);
-			con6.insets = insets;
 			connectedIps.add(name);
-			insertpanel.removeAll();
-			insertpanel.add(changeUI());
-			insertpanel.revalidate(); 
-			insertpanel.repaint();
 			panel1.add(changeUI(),con6);
 			panel1.revalidate(); 
 			panel1.repaint();
 		}
 	}
-	
+
 	public void deleteUser(String name){
 		if (connectedIps.contains(name)){
 			panel1.remove(insertpanel);
-			connectedIps.remove(name);
-			insertpanel.removeAll();
-			insertpanel.add(changeUI());
-			insertpanel.revalidate(); 
-			insertpanel.repaint();
-			GridBagConstraints con6 = new GridBagConstraints();
-			con6.fill = GridBagConstraints.BOTH;
-			con6.weightx = 1.0;
-			con6.weighty = 1.0;
-			con6.gridx = 1;
-			con6.gridy = 0;
-			con6.ipady = (int) (windowHeight / 5);
-			con6.ipadx = (int) (windowWidth / 17);
-			con6.insets = insets;
 			panel1.add(changeUI(),con6);
 			panel1.revalidate(); 
 			panel1.repaint();
 		}
 	}
-	
+
 	public JPanel changeUI(){
 		buttonpanel.removeAll();
 		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);
@@ -158,20 +139,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 		layout.setHorizontalGroup(sgroup.addGroup(pgroup));
 		layout.setVerticalGroup(vgroup.addGroup(p2group.addGroup(v2group)));
-		GridBagConstraints con1 = new GridBagConstraints();
-		GridBagConstraints con5 = new GridBagConstraints();
-		con1.fill = GridBagConstraints.BOTH;
-		con1.gridx = 0;
-		con1.gridy = 1;
-		con1.ipady = (int) (windowHeight / 1.8);
-		con1.ipadx = (int) (windowWidth / 5);
-		con5.fill = GridBagConstraints.BOTH;
-		con5.weightx = 1.0;
-		con5.weighty = 1.0;
-		con5.gridx = 0;
-		con5.gridy = 0;
-		con5.ipady = (int) (windowHeight / 17);
-		con5.ipadx = (int) (windowHeight / 17);
 		insertpanel = new JPanel(new GridBagLayout());
 		insertpanel.setBackground(new Color(34,121,220));
 		insertpanel.add(toparea,con5);
@@ -187,7 +154,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			butto.setFont(new Font("Calibri", Font.ITALIC, 40));
 			butto.setBackground(new Color(255,255,255));
 			butto.setMinimumSize(new Dimension(0,110));
-			butto.setMaximumSize(new Dimension(1000000,100));
+			butto.setMaximumSize(new Dimension(1000000,110));
 			butto.setForeground(new Color(34,121,220));
 			buttons.add(butto);
 		}
@@ -209,14 +176,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		layout = new GroupLayout(buttonpanel);
 		textarea1.setEditable(false);
 		textarea2.setEditable(false);		
-
-		GridBagConstraints con1 = new GridBagConstraints();
-		GridBagConstraints con2 = new GridBagConstraints();
-		GridBagConstraints con3 = new GridBagConstraints();
-		GridBagConstraints con4 = new GridBagConstraints();
-		GridBagConstraints con5 = new GridBagConstraints();
-		GridBagConstraints con6 = new GridBagConstraints();
-		GridBagConstraints con7 = new GridBagConstraints();
 
 		con1.fill = GridBagConstraints.BOTH;
 		con1.gridx = 0;
@@ -419,15 +378,21 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		char c;
 		if ((c = e.getKeyChar()) != KeyEvent.CHAR_UNDEFINED) {
 			if (e.getSource().equals(textfield1)) {
-				if (c == '\n') {
-					sendMessage(textfield1.getText());
-				} else {	
-					if (isLetterOrNumber(c)) {
-						sendEnabled = true;
-					} else if (containsLetterOrNumber(textfield1.getText())) {
-						sendEnabled = true;
-					} else {
-						sendEnabled = false;
+				if (textfield1.getText().length() > MAX_LENGTH) {
+					addPopup("Username too long", "Max message length is " + MAX_LENGTH, false);
+					textfield1.setText(textfield1.getText().substring(0, MAX_LENGTH));
+				}
+				else {
+					if (c == '\n') {
+						sendMessage(textfield1.getText());
+					} else {	
+						if (isLetterOrNumber(c)) {
+							sendEnabled = true;
+						} else if (containsLetterOrNumber(textfield1.getText())) {
+							sendEnabled = true;
+						} else {
+							sendEnabled = false;
+						}
 					}
 				}
 			}

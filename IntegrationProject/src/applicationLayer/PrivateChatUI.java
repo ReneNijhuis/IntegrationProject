@@ -36,6 +36,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	private int windowWidth = (int)(screenSize.width * 0.75d);
 	private int windowHeight = (int)(windowWidth / 1280 * 800);
+	private static final int MAX_LENGTH = 184;
 	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
 
 	private final Main main;
@@ -245,16 +246,22 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	public void keyTyped(KeyEvent e) {
 		char c;
 		if ((c = e.getKeyChar()) != KeyEvent.CHAR_UNDEFINED) {
-			if (e.getSource().equals(textfield1)) {
-				if (c == '\n') {
-					sendMessage(textfield1.getText());
-				} else {	
-					if (isLetterOrNumber(c)) {
-						sendEnabled = true;
-					} else if (containsLetterOrNumber(textfield1.getText())) {
-						sendEnabled = true;
-					} else {
-						sendEnabled = false;
+			if (e.getSource().equals(textfield1)&&c != '\n') {
+				if (textfield1.getText().length() > MAX_LENGTH) {
+					addPopup("Username too long", "Max message length is " + MAX_LENGTH, false);
+					textfield1.setText(textfield1.getText().substring(0, MAX_LENGTH));
+				}
+				else {
+					if (c == '\n') {
+						sendMessage(textfield1.getText());
+					} else {	
+						if (isLetterOrNumber(c)) {
+							sendEnabled = true;
+						} else if (containsLetterOrNumber(textfield1.getText())) {
+							sendEnabled = true;
+						} else {
+							sendEnabled = false;
+						}
 					}
 				}
 			}
@@ -305,9 +312,9 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
 		}
 	}
-	
+
 	public void setCompagionName(String name){
-		textarea2.append(name);
+		textarea2.setText(name);
 	}
 
 	public boolean addQuestion(String title, String message, boolean warning) {

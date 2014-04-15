@@ -27,6 +27,10 @@ public class TrackerTest implements Observer {
 			route2.setAlly(route1);
 			track1 = new PacketTrackerTestingVersion(route1, route2.getAddress());
 			track2 = new PacketTrackerTestingVersion(route2, route1.getAddress());
+			track1.addObserver(this);
+			track2.addObserver(this);
+			track1.start();
+			track2.start();
 		} catch (UnknownHostException e) {
 			output("Something went wrong creating the routers");
 			try {
@@ -40,24 +44,28 @@ public class TrackerTest implements Observer {
 		output("Tracker test started");
 		loop:
 		while (true) {
-			String command = input.next().toLowerCase().substring(0, 4);
+			String command = "";
+			try {
+				command = input.next().toLowerCase().substring(0, 4);
+			} catch (StringIndexOutOfBoundsException e) {
+				//do nothing
+			}
 			switch(command){
 			case "setu":
 				startSetup();
 				break;
 			case "send":
-				sendMessage();
+				Boolean drop = input.next().toLowerCase().startsWith("y");
+				String message = input.next();
+				sendMessage(drop, message);
 				break;
 			case "disc":
-				startDisconnection();
-				break;
-			case "drop":
-				dropConnection();
+				disconnect();
 				break;
 			case "stop":
 				break loop;
 			default:
-				output("what? generate, show, test or stop?");
+				output("what? setup, send, disc, drop or stop?");
 				break;
 			}
 		}
@@ -72,29 +80,28 @@ public class TrackerTest implements Observer {
 		}
 	}
 
-	private void dropConnection() {
-		// TODO Auto-generated method stub
-		
+	private void disconnect() {
+		int ender = 1 + rand.nextInt(2);
+		if (ender == 1) {
+			track1.endConnection(true, null);
+		} else if (ender == 2) {
+			track2.endConnection(true, null);
+		}
 	}
 
-	private void startDisconnection() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void sendMessage() {
-		// TODO Auto-generated method stub
-		
+	private void sendMessage(Boolean drop, String message) {
+		int sender = 1 + rand.nextInt(2);
+		if (sender == 1) {
+			if (drop) route2.dropNext();
+			track1.sendData(message.getBytes());
+		} else if (sender == 2) {
+			if (drop) route1.dropNext();
+			track2.sendData(message.getBytes());
+		}
 	}
 
 	private void startSetup() {
 		int initiater = 1 + rand.nextInt(2);
-		track1.addObserver(this);
-		track2.addObserver(this);
-		route1.addObserver(track1);
-		route2.addObserver(track2);
-		track1.start();
-		track2.start();
 		if (initiater == 1) {
 			track1.setupConnection(true);
 		} else if (initiater == 2) {

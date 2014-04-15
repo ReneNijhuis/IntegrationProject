@@ -157,9 +157,6 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 				main.login();
 			}
 		} else {
-			if (theName == "") {
-				theName = "Somebody";
-			}
 			addPopup("Password error", theName + ", the password is not valid!\n" +
 					"The password should at least consist of 6 characters and " +
 					"should contain no spaces", true);

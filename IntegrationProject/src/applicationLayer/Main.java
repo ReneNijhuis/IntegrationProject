@@ -41,7 +41,7 @@ public class Main implements Observer {
 	private Encryption publEncryptor;
 	private Encryption privEncryptor;
 	
-	private String name;
+	public String name;
 	private byte[] pass;
 	private byte[] iv;
 	private byte[] privPass;
@@ -65,11 +65,15 @@ public class Main implements Observer {
 		privIv = createHash(privPass);
 		privEncryptor = new Encryption(privPass, privIv);
 		chatUI.setCompagionName(compagionName);
-		switchUI();
+		// TODO TCP implementation (setup + start)
+		router.deleteObserver(this);
+		tcp.addObserver(this);
+		switchUI();	
 	}
 	
 	public void toPublic() {
 		multiChat = true;
+		// TODO TCP implementation (shutdown)
 		switchUI();
 	}
 	
@@ -94,6 +98,7 @@ public class Main implements Observer {
 		// create and encrypt packet
 		ChatPacket chatPacket = new ChatPacket(type, name, message);
 		byte[] cipherText = encrypt(chatPacket);
+		//TODO TCP
 		boolean succes = router.sendPacket(Packet.generatePacket(cipherText));	
 		if (succes) {
 			mainUI.addMessage(name, message);
@@ -171,11 +176,11 @@ public class Main implements Observer {
 		router.addObserver(this);
 		router.start();	
 		// start routing protocol
-		routing = new RoutingProtocol(router, IP);
+		routing = new RoutingProtocol(this, router);
 		routing.start();
 		// start Packet-tracker (our kind of TCP)//
-		//TODO tcp = new PacketTracker(router);
-		//TODO tcp.start();
+		//tcp = new PacketTracker(router);
+		//tcp.start();
 		return true;
 	}
 	
@@ -212,8 +217,9 @@ public class Main implements Observer {
 		} else {
 			chatUI.setVisible(false);
 		}
-		loginUI.reset();
 		loginUI.setVisible(true);
+		router.shutDown(false, true);
+		routing.shutDown();
 	}
 	
 	/**
@@ -236,10 +242,12 @@ public class Main implements Observer {
 	 */
 	public void shutDown(boolean userDestruct) {
 		router.deleteObserver(this);
+		routing.shutDown();
 		if (userDestruct) {
 			router.shutDown(false, true);	
 		} else {
 			mainUI.dispose();
+			// TODO TCP implementation (shutdown)
 		}
 	}
 }

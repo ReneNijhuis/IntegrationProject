@@ -28,7 +28,7 @@ public enum PacketType {
 	}
 	
 	/**
-	 * Returns the byte lined to this PacketType.
+	 * Returns the byte linked to this PacketType.
 	 */
 	public static byte toByte(PacketType type) {
 		return (byte) type.ordinal();

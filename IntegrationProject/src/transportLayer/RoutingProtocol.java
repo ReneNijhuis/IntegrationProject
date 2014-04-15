@@ -9,44 +9,91 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
+import applicationLayer.Main;
+
 import connectionLayer.InternetProtocol;
 
+/**
+ * Routing protocol. Continuously searches for the number of hops to all other 
+ * nodes and identifies every other node.
+ * 
+ * @author Florian Mansvelder en Rob van Emous
+ */
 public class RoutingProtocol implements Observer {
 
 	public static final int HEARTBEAT_INTERVAL = 500; //ms
 	private static final int TIME_OUT = 3 * HEARTBEAT_INTERVAL;
-	private static final String HEARTBEAT_MESSAGE = "Secretkey=Kaviaar";
-	private static final byte[] HEARTBEAT_MESSAGE_BYTES = HEARTBEAT_MESSAGE.getBytes();
-
-	private PacketType packetType= PacketType.ROUTING;
-	private byte packetByte = PacketType.toByte(packetType);
-	private Map<InetAddress, Integer> hopsPerNode = new HashMap<InetAddress, Integer>(); //routing table
-	private Map<InetAddress, Long> directLinks = new HashMap<InetAddress, Long>(); //map with 1 hops links
-	private List<InetAddress> inetaddresses = new ArrayList<InetAddress>(); //all registered addresses
-	private byte[] MapData; //routing table as byte[] to be sent
-	private Map<InetAddress, Integer> receivedHopsPerNode = new HashMap<InetAddress, Integer>();//received routing table
-	private byte[] receivedData; //received table as byte[]
-	private boolean updatereceived = false;//used for knowing whether routing table has to be updated
-	private InetAddress ownAddress;
+	
+	private PacketType packetType = PacketType.ROUTING;
+	
+	
+	private ArrayList<NodeInfo> connectedNodes = new ArrayList<NodeInfo>();
+																
+	private boolean updatereceived = false; //used for knowing whether routing table has to be updated
 	private PacketRouter router;
+	
+	private String clientName;
 
 	private boolean stop = false;
 
-	public RoutingProtocol(PacketRouter router, InetAddress ip) {	
+	public RoutingProtocol(Main main, PacketRouter router) {	
 		this.router = router;
-		this.ownAddress = ip;
+		clientName = main.name;
+	}
+	
+	public void start() {
+		Thread thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (!stop){
+					long startTime = System.currentTimeMillis();
+					sendHeartBeat();
+					if (updatereceived){
+						SendMap();
+						updatereceived = false;
+						for(NodeInfo node : connectedNodes){
+							router.addRule(new ForwardRule(null, node.getNodeIp(), ForwardAction.FORWARD_READ));
+						}
+					}
+					deleteHost();
+					int timeDiff = (int) (System.currentTimeMillis() - startTime);
+					try {
+						Thread.sleep(HEARTBEAT_INTERVAL - timeDiff);
+					} catch (InterruptedException e) {}
+				}
+			}
+		});
+		thread.start();
 	}
 
 	/**
-	 * Send a hearbeat packet
+	 * Send a heartbeat packet.
 	 */
-	public void heartBeat() {
-		byte[] toSend = new byte[HEARTBEAT_MESSAGE_BYTES.length+1];
-		toSend[0] = packetByte;
-		for(int i = 1; i < toSend.length; i++){
-			toSend[i] = HEARTBEAT_MESSAGE_BYTES[i - 1];
-		}		
-		router.sendPacket(Packet.generatePacket(toSend,(short) 1));
+	private void sendHeartBeat() {
+		sendRoutingPacket(RoutingType.HEARTBEAT, 1, clientName);
+	}
+	
+	/**
+	 * send a packet with routing table as byte[]
+	 */
+	public void SendMap(){
+		byte[] mapData = createMapData();
+		router.sendPacket(Packet.generatePacket(mapData,(short) 1));
+	}
+
+	public void sendDelete(InetAddress removedIP) {	
+		sendRoutingPacket(RoutingType.DELETE, getMaxHops(), removedIP.toString());		
+	}
+	
+	/**
+	 * Sends a routing packet.
+	 * @param type the type of routing packet
+	 * @param TTL the TTL of the packet
+	 * @param data data of the packet
+	 */
+	private void sendRoutingPacket(RoutingType routingType, int TTL, String data) {
+		String toSend = packetType.toByte() + routingType.toByte() + data;	
+		router.sendPacket(Packet.generatePacket(toSend.getBytes(),(short) TTL));
 	}
 	
 	public Map<InetAddress, Integer> getRoutingTable(){
@@ -56,29 +103,7 @@ public class RoutingProtocol implements Observer {
 	public int getTTL(InetAddress destination){
 		return hopsPerNode.get(destination);
 	}
-
-	public void sendDelete(InetAddress removedIP) {
-		byte[] DelIPData = new String("Delete" + removedIP.toString()).getBytes();
-		byte[] toSend = new byte[DelIPData.length+1];
-		for(int i = 0; i < toSend.length; i ++){
-			toSend[i + 1] = DelIPData[i];
-		}
-		toSend[0] = packetByte;
-		try {
-			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 3, toSend));
-		} catch (UnknownHostException | MalformedPacketException e) {}
-	}
-	/**
-	 * send a packet with routing table as byte[]
-	 */
-	public void SendMap(){
-		fillHopsPerNode();
-		updateHopsPerNode();
-		fillMap();
-		try {
-			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 1, MapData));
-		} catch (UnknownHostException | MalformedPacketException e) {}
-	}
+	
 	/**
 	 * updates the routing table according to the received routing table
 	 */
@@ -99,21 +124,13 @@ public class RoutingProtocol implements Observer {
 			}
 		}
 	}
-	/**
-	 * puts the directlinks in the routing table
-	 */
-	public void fillHopsPerNode(){
-		for(int i = 0; i < inetaddresses.size(); i ++){
-			if(directLinks.containsKey(inetaddresses.get(i))){
-				hopsPerNode.put(inetaddresses.get(i), 0);
-			}
-		}
-	}
+	
+	
 	/**
 	 * fills the byte[] MapData with the routing table along with three-byte identifier as first three bytes
 	 */
 	public void fillMap(){
-		byte[] MapData2 = 	hopsPerNode.toString().getBytes();
+		byte[] MapData2 = hopsPerNode.toString().getBytes();
 		MapData = new byte[MapData2.length + 3];
 		for(int i = 0; i < MapData2.length; i ++){
 			MapData[i + 3] = MapData2[i];
@@ -138,18 +155,27 @@ public class RoutingProtocol implements Observer {
 			}
 		}
 	}
+	
 	/**
-	 * receives packets, updates directlinks when a heartbeat is received if necessary and resets time out timer
+	 * Receives packets, updates directlinks when a heartbeat is received if necessary and resets time out timer
 	 * fills receivedHopsPerNode if MapData received, noted by identifiers
 	 */
 	public void update(Observable observable, Object object) {
 		if (observable instanceof PacketRouter && object instanceof Packet) {
 			Packet packet = (Packet)object;
-			if(packet.getPacketData()[0] == packetByte){
-				byte[] packetData = new byte[packet.getPacketData().length-1];
-				for(int i = 0; i < packetData.length; i ++){
-					packetData[i] = packet.getPacketData()[i + 1];
+			byte[] data = packet.getPacketData();		
+			if(data[0] == packetType.toByte()){
+				RoutingType routingType = RoutingType.getType(data[1]);
+				byte[] actualData = new byte[data.length - 2];
+				System.arraycopy(data, 2, actualData, 0, data.length);
+				if (routingType == RoutingType.HEARTBEAT) {
+					
+				} else if (routingType == RoutingType.TABLE_UPDATE) {
+					
+				} else if (routingType == RoutingType.DELETE) {
+					router.removeRule(new ForwardRule(null, connectedNodes., ForwardAction.FORWARD_READ));
 				}
+				
 				if(new String(packetData).contains("Delete")){
 					for (int i = 0; i < inetaddresses.size(); i++){
 						if (new String(packetData).contains(inetaddresses.get(i).toString())){
@@ -220,30 +246,39 @@ public class RoutingProtocol implements Observer {
 		}
 		return map;
 	}
-
-	public void start() {
-		Thread thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while (!stop){
-					heartBeat();
-					if (updatereceived){
-						SendMap();
-						updatereceived = false;
-						for(int i = 0; i < inetaddresses.size(); i ++){
-							router.addRule(new ForwardRule(null, inetaddresses.get(i), ForwardAction.FORWARD_READ));
-						}
-					}
-					deleteHost();
-					try {
-						Thread.sleep(HEARTBEAT_INTERVAL);
-					} catch (InterruptedException e) {}
-				}
-
+	
+	public HashMap<InetAddress, String> getIpNameCombos() {
+		HashMap<InetAddress, String> map = new HashMap<InetAddress, String>();
+		
+	}
+	
+	public NodeInfo getNodeByIp(InetAddress ip) {
+		for (NodeInfo node : connectedNodes) {
+			if (node.getNodeIp().equals(ip)) {
+				return node;
 			}
-		});
-		thread.start();
-
+		}
+		return null;
+	}
+	
+	public NodeInfo getNodeByName(String name) {
+		for (NodeInfo node : connectedNodes) {
+			if (node.getNodeName().equals(name)) {
+				return node;
+			}
+		}
+		return null;
+	}
+	
+	private int getMaxHops() {
+		int max = 0;
+		for (NodeInfo node : connectedNodes) {
+			int distance = node.getHopDistance();
+			if (max < distance) {
+				max = distance;
+			}
+		}
+		return max;
 	}
 
 	/**

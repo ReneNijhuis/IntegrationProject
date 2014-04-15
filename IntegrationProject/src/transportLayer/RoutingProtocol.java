@@ -16,7 +16,9 @@ public class RoutingProtocol implements Observer {
 	public static final int HEARTBEAT_INTERVAL = 2000; //ms
 	private static final String HEARTBEAT_MESSAGE = "Secretkey=Kaviaar";
 	private static final byte[] HEARTBEAT_MESSAGE_BYTES = HEARTBEAT_MESSAGE.getBytes();
-	
+
+	private PacketType packetType= PacketType.ROUTING;
+	private byte packetByte = PacketType.toByte(packetType);
 	private Map<InetAddress, Integer> hopsPerNode = new HashMap<InetAddress, Integer>(); //routing table
 	private Map<InetAddress, Long> directLinks = new HashMap<InetAddress, Long>(); //map with 1 hops links
 	private List<InetAddress> inetaddresses = new ArrayList<InetAddress>(); //all registered addresses
@@ -38,23 +40,33 @@ public class RoutingProtocol implements Observer {
 	 * Send a hearbeat packet
 	 */
 	public void heartBeat() {
+		byte[] toSend = new byte[HEARTBEAT_MESSAGE_BYTES.length];
+		for(int i = 0; i < toSend.length; i ++){
+			toSend[i + 1] = HEARTBEAT_MESSAGE_BYTES[i];
+		}
+		toSend[0] = packetByte;
 		try {
-			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 1, HEARTBEAT_MESSAGE_BYTES));
+			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 1, toSend));
 		} catch (UnknownHostException | MalformedPacketException e) {}
 	}
 
 	public Map<InetAddress, Integer> getRoutingTable(){
 		return hopsPerNode;
 	}
-	
+
 	public int getTTL(InetAddress destination){
 		return hopsPerNode.get(destination);
 	}
 
 	public void sendDelete(InetAddress removedIP) {
 		byte[] DelIPData = new String("Delete" + removedIP.toString()).getBytes();
+		byte[] toSend = new byte[DelIPData.length+1];
+		for(int i = 0; i < toSend.length; i ++){
+			toSend[i + 1] = DelIPData[i];
+		}
+		toSend[0] = packetByte;
 		try {
-			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 3, DelIPData));
+			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 3, toSend));
 		} catch (UnknownHostException | MalformedPacketException e) {}
 	}
 	/**
@@ -107,7 +119,7 @@ public class RoutingProtocol implements Observer {
 		for(int i = 0; i < MapData2.length; i ++){
 			MapData[i + 3] = MapData2[i];
 		}
-		MapData[0] = 0x68;
+		MapData[0] = packetByte;
 		MapData[1] = 0x34;
 		MapData[2] = 0x12;
 	}
@@ -134,34 +146,39 @@ public class RoutingProtocol implements Observer {
 	public void update(Observable observable, Object object) {
 		if (observable instanceof PacketRouter && object instanceof Packet) {
 			Packet packet = (Packet)object;
-			packet.decrementTTL(); 
-			if(new String(packet.getPacketData()).contains("Delete")){
-				for (int i = 0; i < inetaddresses.size(); i++){
-					if (new String(packet.getPacketData()).contains(inetaddresses.get(i).toString())){
-						directLinks.remove(inetaddresses.get(i));
-						hopsPerNode.remove(inetaddresses.get(i));
-						inetaddresses.remove(i);
-						router.removeRule(new ForwardRule(null, inetaddresses.get(i), ForwardAction.FORWARD_READ));
-						updatereceived = true;
+			if(packet.getPacketData()[0] == packetByte){
+				byte[] packetData = new byte[packet.getPacketData().length-1];
+				for(int i = 0; i < packetData.length; i ++){
+					packetData[i] = packet.getPacketData()[i + 1];
+				}
+				if(new String(packetData).contains("Delete")){
+					for (int i = 0; i < inetaddresses.size(); i++){
+						if (new String(packetData).contains(inetaddresses.get(i).toString())){
+							directLinks.remove(inetaddresses.get(i));
+							hopsPerNode.remove(inetaddresses.get(i));
+							inetaddresses.remove(i);
+							router.removeRule(new ForwardRule(null, inetaddresses.get(i), ForwardAction.FORWARD_READ));
+							updatereceived = true;
+						}
 					}
 				}
-			}
-			if(new String(packet.getPacketData()).contains(HEARTBEAT_MESSAGE)){
-				if (!inetaddresses.contains(packet.getCurrentSource())){
-					inetaddresses.add(packet.getCurrentSource());
+				if(new String(packetData).contains(HEARTBEAT_MESSAGE)){
+					if (!inetaddresses.contains(packet.getCurrentSource())){
+						inetaddresses.add(packet.getCurrentSource());
+						updatereceived = true;
+					}
+					directLinks.put(packet.getCurrentSource(),(System.currentTimeMillis()));
+				}
+				if(packetData[0] == 0x34 && 
+						packetData[1] == 0x12){
+					receivedData = new byte[packetData.length-2];
+					for (int i = 0; i<receivedData.length; i++){
+						receivedData[i] = packet.getPacketData()[i+2];
+					}
+					receivedData = packetData;
+					receivedHopsPerNode = byteToMap(receivedData);
 					updatereceived = true;
 				}
-				directLinks.put(packet.getCurrentSource(),(System.currentTimeMillis()));
-			}
-			if(packet.getPacketData()[0] == 0x68 && packet.getPacketData()[1] == 0x34 && 
-					packet.getPacketData()[2] == 0x12){
-				receivedData = new byte[packet.getPacketData().length-3];
-				for (int i = 0; i<receivedData.length; i++){
-					receivedData[i] = packet.getPacketData()[i+3];
-				}
-				receivedData = packet.getPacketData();
-				receivedHopsPerNode = byteToMap(receivedData);
-				updatereceived = true;
 			}
 		} else if (observable instanceof PacketRouter && object instanceof String) {
 			String message = (String)object;
@@ -242,21 +259,21 @@ public class RoutingProtocol implements Observer {
 		router.deleteObserver(this);
 	}
 
-//	public static void main(String[] args){
-//		Map<InetAddress, Integer> map = new HashMap<InetAddress, Integer>();
-//		try {
-//			map.put(InetAddress.getByName("192.168.5.4"),3);
-//		} catch (UnknownHostException e) {}
-//		try {
-//			map.put(InetAddress.getByName("192.168.5.1"),1);
-//		} catch (UnknownHostException e) {}
-//		try {
-//			map.put(InetAddress.getByName("192.168.5.3"),2);
-//		} catch (UnknownHostException e) {}
-//		try {
-//			map.put(InetAddress.getByName("192.168.5.2"),1);
-//		} catch (UnknownHostException e) {}
-//		System.out.println(map.toString());
-//		System.out.println(byteToMap(mapToByte(map)));
-//	}
+	//	public static void main(String[] args){
+	//		Map<InetAddress, Integer> map = new HashMap<InetAddress, Integer>();
+	//		try {
+	//			map.put(InetAddress.getByName("192.168.5.4"),3);
+	//		} catch (UnknownHostException e) {}
+	//		try {
+	//			map.put(InetAddress.getByName("192.168.5.1"),1);
+	//		} catch (UnknownHostException e) {}
+	//		try {
+	//			map.put(InetAddress.getByName("192.168.5.3"),2);
+	//		} catch (UnknownHostException e) {}
+	//		try {
+	//			map.put(InetAddress.getByName("192.168.5.2"),1);
+	//		} catch (UnknownHostException e) {}
+	//		System.out.println(map.toString());
+	//		System.out.println(byteToMap(mapToByte(map)));
+	//	}
 }

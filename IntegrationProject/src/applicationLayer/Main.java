@@ -30,6 +30,7 @@ import encryptionLayer.MalformedCipherTextException;
 public class Main implements Observer {
 	
 	private MainUI mainUI;
+	private PrivateChatUI chatUI;
 	private LoginGUI loginUI;
 	private PacketRouter router;
 	private PacketTracker tcp;
@@ -37,10 +38,14 @@ public class Main implements Observer {
 	
 	private boolean multiChat = true;
 	
-	private Encryption encryptor;
+	private Encryption publEncryptor;
+	private Encryption privEncryptor;
+	
 	private String name;
 	private byte[] pass;
 	private byte[] iv;
+	private byte[] privPass;
+	private byte[] privIv;
 	
 	public InetAddress ip;
 	
@@ -49,7 +54,25 @@ public class Main implements Observer {
 		loginUI = new LoginGUI(this);
 		// create UI (don't show it yet)
 		mainUI = new MainUI(this);	
+		// create private UI (don't show it yet)
+		chatUI = new PrivateChatUI(this);
 		// done here, wait for login to complete		
+	}
+	
+	public void toPrivate(String compagionName, byte[] key) {
+		multiChat = false;
+		privEncryptor = new Encryption(privPass, privIv);
+		switchUI();
+	}
+	
+	public void toPublic() {
+		multiChat = true;
+		switchUI();
+	}
+	
+	private void switchUI() {
+		chatUI.setVisible(!multiChat);
+		mainUI.setVisible(multiChat);
 	}
 	
 	/**
@@ -58,14 +81,16 @@ public class Main implements Observer {
 	 * @return whether successful or not
 	 */
 	public boolean sendMessage(String message) {
+		// set packetType byte
 		PacketType type;
 		if (multiChat) {
 			type = PacketType.CHAT_PUBL;
 		} else {
 			type = PacketType.CHAT_PRIV;
 		}
+		// create and encrypt packet
 		ChatPacket chatPacket = new ChatPacket(type, name, message);
-		byte[] cipherText = encryptor.encrypt(chatPacket.toString().getBytes());
+		byte[] cipherText = encrypt(chatPacket);
 		boolean succes = router.sendPacket(Packet.generatePacket(cipherText));	
 		if (succes) {
 			mainUI.addMessage(name, message);
@@ -103,7 +128,7 @@ public class Main implements Observer {
 			byte[] message = ((Packet)arg).getPacketData();
 			ChatPacket packet = null;
 			try {
-				String plaintext = encryptor.decrypt(message);
+				String plaintext = decrypt(message);
 				packet = new ChatPacket(plaintext);
 			} catch (MalformedCipherTextException e) {
 				// drop packet
@@ -125,15 +150,12 @@ public class Main implements Observer {
 	 */
 	public boolean tryLogin(String name, String pass){ 
 		this.name = name;
-		try {
-			// generate hash of password (safer for most passwords)
-			this.pass = Encryption.generateHash(pass, Encryption.SHA_256);
-			generateIV();
-		} catch (NoSuchAlgorithmException e) {
-			// will probably never happen
-		}
-		// create encryptor
-		encryptor = new Encryption(this.pass, iv);
+		// generate hash of password (safer for most passwords)
+		this.pass = createHash(pass.getBytes());
+		// generate iv (hash of hash of password
+		iv = createHash(this.pass);
+		// create public encryptor
+		privEncryptor = new Encryption(this.pass, iv);
 		// start Ad-Hoc-client
 		InternetProtocol client = new InternetProtocol();
 		client.start();
@@ -153,6 +175,26 @@ public class Main implements Observer {
 		return true;
 	}
 	
+	private byte[] encrypt(ChatPacket chatPacket) {
+		byte[] cipherText;
+		if (multiChat) {
+			cipherText = publEncryptor.encrypt(chatPacket.toString().getBytes());
+		} else {
+			cipherText = privEncryptor.encrypt(chatPacket.toString().getBytes());
+		}
+		return cipherText;
+	}
+	
+	private String decrypt(byte[] cipherText) throws MalformedCipherTextException {
+		String plainText;
+		if (multiChat) {
+			plainText = publEncryptor.decrypt(cipherText);
+		} else {
+			plainText = publEncryptor.decrypt(cipherText);
+		}
+		return plainText;
+	}
+	
 	/**
 	 * Really login
 	 */
@@ -160,15 +202,27 @@ public class Main implements Observer {
 		mainUI.setVisible(true);
 	}
 	
+	public void logout() {
+		if (multiChat) {
+			mainUI.setVisible(false);
+		} else {
+			chatUI.setVisible(false);
+		}
+		loginUI.reset();
+		loginUI.setVisible(true);
+	}
+	
 	/**
 	 * The IV is the double-hash of the original key (hash of hashed key).
 	 */
-	private void generateIV() {
+	private byte[] createHash(byte[] bytes) {
+		byte[] hash = null;
 		try {
-			iv = Encryption.generateHash(pass, Encryption.SHA_256);
+			hash = Encryption.generateHash(bytes, Encryption.SHA_256);
 		} catch (NoSuchAlgorithmException e) {
 			// will probably never happen
-		}	
+		}
+		return hash;
 	}
 
 	/**

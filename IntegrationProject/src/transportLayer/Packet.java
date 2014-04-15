@@ -22,6 +22,8 @@ import tools.PrintUtil;
 public class Packet {
 
 	private static final int HEADER_LENGTH = 73;
+	private static final int IP_LENGTH = 4;
+	private static final int SECURITY_LENGTH = 32;
 	
 	// Header format: 4 bytes src, 4 bytes dest, 1 byte TTL, 32 bytes sign, 32 bytes hash (SHA-256)
 	private InetAddress source;        		// the creator of this packet
@@ -46,14 +48,19 @@ public class Packet {
 			// no headers or data
 			throw new MalformedPacketException("No headers or data found");
 		}
+		int index = 0;
 		try { 
-			source = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 0, 4));
+			source = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, index, index += IP_LENGTH));
 		} catch (UnknownHostException | ArrayIndexOutOfBoundsException e) {
 			throw new MalformedPacketException("Malformed 'src'");
 		}
-
 		try { 
-			destination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 4, 8));
+			currentDestination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, index, index += IP_LENGTH));
+		} catch (UnknownHostException | ArrayIndexOutOfBoundsException e) {
+			throw new MalformedPacketException("Malformed 'dest'");
+		}
+		try { 
+			destination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, index, index += IP_LENGTH));
 		} catch (UnknownHostException | ArrayIndexOutOfBoundsException e) {
 			throw new MalformedPacketException("Malformed 'dest'");
 		}
@@ -62,17 +69,18 @@ public class Packet {
 		} catch (ArrayIndexOutOfBoundsException e) {
 			throw new MalformedPacketException("Malformed 'TTL'");
 		}
+		index++;
 		try { 
-			signature = Arrays.copyOfRange(datagramData, 9, 41);
+			signature = Arrays.copyOfRange(datagramData, index, index += SECURITY_LENGTH);
 		} catch (ArrayIndexOutOfBoundsException e) {
 			throw new MalformedPacketException("Malformed 'sign'");
 		}	
 		try { 
-			hash = Arrays.copyOfRange(datagramData, 41, HEADER_LENGTH);
+			hash = Arrays.copyOfRange(datagramData, index, index += SECURITY_LENGTH);
 		} catch (ArrayIndexOutOfBoundsException e) {
 			throw new MalformedPacketException("Malformed 'hash'");
 		}
-		byte[] tempData = Arrays.copyOfRange(datagramData, HEADER_LENGTH, datagramData.length);
+		byte[] tempData = Arrays.copyOfRange(datagramData, index, datagramData.length);
 		int counter = tempData.length - 1;
 		byte sample = tempData[counter];
 		for (;counter >= 0; counter--) {
@@ -85,6 +93,11 @@ public class Packet {
 	
 	public Packet(InetAddress currentSource, InetAddress source, InetAddress destination, short TTL, byte[] data) throws MalformedPacketException {
 		boolean wrongArguments = false;
+		try {
+			currentDestination = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
+		} catch (UnknownHostException e) {
+			// will not happen
+		}
 		String errorMessage = "";
 		if (currentSource == null) {
 			wrongArguments = true;
@@ -120,9 +133,10 @@ public class Packet {
 	
 	public Packet(InetAddress destination, byte[] data) {
 		try {
-			this.destination = destination;
 			currentSource = InetAddress.getLocalHost();
 			source = InetAddress.getLocalHost();
+			currentDestination = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
+			this.destination = destination;
 		} catch (UnknownHostException e) {
 			// will probably never happen
 		}
@@ -139,6 +153,7 @@ public class Packet {
 	public Packet(Packet packet) {
 		currentSource = packet.getCurrentSource();
 		source = packet.getSource();
+		currentDestination = packet.getCurrentDestination();
 		destination = packet.getDestination();
 		port = packet.getPort();
 		TTL = packet.getTTL();
@@ -146,13 +161,17 @@ public class Packet {
 		hash = packet.getHash();
 		data = packet.getPacketData();
 	}
-	
+
 	public InetAddress getCurrentSource() {
 		return currentSource;
 	}
 	
 	public InetAddress getSource(){
 		return source;
+	}
+	
+	private InetAddress getCurrentDestination() {
+		return currentDestination;
 	}
 	
 	public InetAddress getDestination(){
@@ -188,6 +207,11 @@ public class Packet {
 		this.source = source;
 		updateHash();
 	}
+	
+	public void setCurrentDestination(InetAddress currentDestination) {
+		this.currentDestination = currentDestination;
+		updateHash();
+	}
 
 	public void setDestination(InetAddress destination){
 		this.destination = destination;
@@ -212,6 +236,7 @@ public class Packet {
 	 * @return the answer Packet
 	 */
 	public static Packet generateAnswer(Packet packet, byte[] data) {
+		//TODO
 		Packet answer = new Packet(packet);
 		try {
 			answer.setCurrentSource(InetAddress.getLocalHost());
@@ -233,6 +258,7 @@ public class Packet {
 	 * @return the forward Packet
 	 */
 	public static Packet generateForward(Packet packet, byte[] data) {
+		//TODO
 		Packet answer = new Packet(packet);
 		try {
 			answer.setCurrentSource(InetAddress.getLocalHost());
@@ -254,6 +280,7 @@ public class Packet {
 	 * @return the test Packet
 	 */
 	public static Packet generatePacket(byte[] data) {
+		//TODO
 		InetAddress currentSource;
 		InetAddress source;
 		InetAddress destination;
@@ -333,7 +360,7 @@ public class Packet {
 	
 	private byte[] combineToByteArray(boolean addSignAndHash) {
 		byte[] array = new byte[data.length + HEADER_LENGTH];
-		
+		//TODO
 		// convert variables into byte (arrays)
 		byte[] srcBytes = source.getAddress();
 		byte[] destBytes = destination.getAddress();
@@ -360,6 +387,7 @@ public class Packet {
 	
 	@Override
 	public String toString() {	
+		//TODO
 		String returner = PrintUtil.START + PrintUtil.genHeader("Packet", "", true, 3);
 		returner += PrintUtil.genDataLine("Current source: " + currentSource, 3);
 		returner += PrintUtil.genDataLine("Source: " + source , 3);

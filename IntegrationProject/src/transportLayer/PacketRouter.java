@@ -22,7 +22,7 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 	private InternetProtocol client;
 	private InetAddress ownAddress;	
 	private byte[] key; // used for signing packets
-	
+	//TODO add support for currentDestination
 	private ArrayList<ForwardRule> routingTable;
 	
 	public PacketRouter(InternetProtocol client, byte[] key) {

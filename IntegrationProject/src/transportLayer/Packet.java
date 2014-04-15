@@ -24,22 +24,15 @@ public class Packet {
 	private static final int HEADER_LENGTH = 73;
 	
 	// Header format: 4 bytes src, 4 bytes dest, 1 byte TTL, 32 bytes sign, 32 bytes hash (SHA-256)
-	private InetAddress source;        // the creator of this packet
-	private InetAddress destination;   // the intended destination of this packet
-	private int port;				   // destination port
-	private short TTL;				   // max hopcount
-	private byte[] signature;		   // HMAC of of headers and data with ttl = 0 & hash = 0
-	private byte[] hash;			   // hash of headers and data with ttl = 0;
-	private byte[] data;			   // actual data
-	private InetAddress currentSource; // the current broadcaster of this packet
-	//private InetAddress
-	
-	private static final InetAddress errSource = null; 		   		// error value
-	private static final InetAddress errDestination = null;    		// error value
-	private static final short errTTL = 256;			       		// error value
-	private static final byte[] errSignature = "NoSign".getBytes(); // error value
-	private static final byte[] errHash = "NoHash".getBytes();		// error value
-	private static final byte[] errData = "NoData".getBytes();		// error value
+	private InetAddress source;        		// the creator of this packet
+	private InetAddress destination;   		// the intended destination of this packet
+	private int port;				   		// destination port
+	private short TTL;				   		// max hopcount
+	private byte[] signature;		   		// HMAC of of headers and data with ttl = 0 & hash = 0
+	private byte[] hash;			   		// hash of headers and data with ttl = 0;
+	private byte[] data;			   		// actual data
+	private InetAddress currentSource; 		// the current broadcaster of this packet
+	private InetAddress currentDestination;	// the current receiver of this packet
 	
 	private static final short defTTL = 10;
 	
@@ -51,71 +44,34 @@ public class Packet {
 			datagramData = datagram.getData(); // contains our headers	
 		} catch (NullPointerException e) {
 			// no headers or data
-			PrintUtil.printTextln("No headers or data found", true);
-			source = errSource;
-			destination = errDestination;
-			TTL = errTTL;
-			signature = errSignature;
-			hash = errHash;
-			data = errData;
 			throw new MalformedPacketException("No headers or data found");
 		}
 		try { 
 			source = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 0, 4));
-		} catch (UnknownHostException e) {
-			PrintUtil.printTextln("Malformed 'src'", true);
-			source = errSource;
-		} catch (ArrayIndexOutOfBoundsException e) {
-			PrintUtil.printTextln("All headers from 'src' missing", true);
-			source = errSource;
-			destination = errDestination;
-			TTL = errTTL;
-			signature = errSignature;
-			hash = errHash;
-			data = errData;
-			throw new MalformedPacketException("All headers from 'src' missing");
+		} catch (UnknownHostException | ArrayIndexOutOfBoundsException e) {
+			throw new MalformedPacketException("Malformed 'src'");
 		}
+
 		try { 
 			destination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, 4, 8));
-		} catch (UnknownHostException e) {
-			PrintUtil.printTextln("Malformed 'dest'", true);
-			destination = errDestination;
-		} catch (ArrayIndexOutOfBoundsException e) {
-			PrintUtil.printTextln("All headers from 'dest' missing", true);
-			destination = errDestination;
-			TTL = errTTL;
-			signature = errSignature;
-			hash = errHash;
-			data = errData;
-			throw new MalformedPacketException("All headers from 'dest' missing");
+		} catch (UnknownHostException | ArrayIndexOutOfBoundsException e) {
+			throw new MalformedPacketException("Malformed 'dest'");
 		}
 		try { 
 			TTL = (short)(0xFF&datagramData[8]);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			PrintUtil.printTextln("All headers from 'TTL' missing", true);
-			TTL = errTTL;
-			signature = errSignature;
-			hash = errHash;
-			data = errData;
-			throw new MalformedPacketException("All headers from 'TTL' missing");
+			throw new MalformedPacketException("Malformed 'TTL'");
 		}
 		try { 
 			signature = Arrays.copyOfRange(datagramData, 9, 41);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			PrintUtil.printTextln("All headers from 'signature' missing", true);
-			signature = errSignature;
-			hash = errHash;
-			data = errData;
-			throw new MalformedPacketException("All headers from 'signature' missing");
+			throw new MalformedPacketException("Malformed 'sign'");
 		}	
 		try { 
 			hash = Arrays.copyOfRange(datagramData, 41, HEADER_LENGTH);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			PrintUtil.printTextln("All headers from 'hash' missing", true);
-			hash = errHash;
-			data = errData;
-			throw new MalformedPacketException("All headers from 'hash' missing");
-		}	
+			throw new MalformedPacketException("Malformed 'hash'");
+		}
 		byte[] tempData = Arrays.copyOfRange(datagramData, HEADER_LENGTH, datagramData.length);
 		int counter = tempData.length - 1;
 		byte sample = tempData[counter];
@@ -412,7 +368,7 @@ public class Packet {
 		returner += PrintUtil.genDataLine("TTL: " + TTL, 3);
 		returner += PrintUtil.genDataLine("Hash: " + hash, 3);
 		returner += PrintUtil.genDataLine("Signature: " + signature, 3);
-		returner += PrintUtil.genDataLine("Data: " + new String(data), 3);
+		returner += PrintUtil.genDataLine("Data: " + data, 3);
 		returner += PrintUtil.START + PrintUtil.genHeader("Packet", "", false, 3);
 		return returner;
 	}

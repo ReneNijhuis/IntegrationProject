@@ -113,7 +113,7 @@ public class Encryption {
 		return multiByte(newbytes);
 	}
 
-	public String decrypt(byte[] ciphertext) throws MalformedCipherTextException{
+	public String decrypt(byte[] ciphertext) throws MalformedCipherTextException {
 		try { 
 			byte[] paddingremoved = removePaddingAmount(ciphertext);
 	
@@ -137,6 +137,7 @@ public class Encryption {
 				}
 				return new String(randombyteremoved);
 			}
+			throw new MalformedCipherTextException("Ciphertext malformed!");
 		} catch (Exception e) {
 			throw new MalformedCipherTextException("Ciphertext malformed!");
 		}

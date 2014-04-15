@@ -17,8 +17,10 @@ import transportLayer.PacketRouter;
 import transportLayer.PacketTracker;
 import transportLayer.PacketType;
 import transportLayer.RoutingProtocol;
+import transportLayer.UnknownPacketTypeException;
 import connectionLayer.InternetProtocol;
 import encryptionLayer.Encryption;
+import encryptionLayer.MalformedCipherTextException;
 
 /**
  * Should become the (executable) main of our whole
@@ -96,16 +98,23 @@ public class Main implements Observer {
 			} 
 		}
 		else if (o.equals(router) && arg instanceof Packet) {
-			byte[] msg = ((Packet)arg).getPacketData();
-			System.out.println(Arrays.toString(msg));
+			String msg = PrintUtil.genHeader("Application", "got message", true, 0);
+			msg += PrintUtil.genDataLine("Action: ", 0, false);
+			byte[] message = ((Packet)arg).getPacketData();
+			ChatPacket packet = null;
 			try {
-				ChatPacket packet = new ChatPacket(encryptor.decrypt(msg));
-				mainUI.addMessage(packet.getSenderName(), packet.getMessage());
-			} catch (Exception e) {
-				//TODO PrintUtil.genHeader("Application", "got message", true, 0);
+				String plaintext = encryptor.decrypt(message);
+				packet = new ChatPacket(plaintext);
+			} catch (MalformedCipherTextException e) {
 				// drop packet
+				msg += PrintUtil.genDataLine("DROP - encryption", 0);
+			} catch (UnknownPacketTypeException e) {
+				// drop packet
+				msg += PrintUtil.genDataLine("DROP - packet type", 0);
 			}
-			
+			mainUI.addMessage(packet.getSenderName(), packet.getMessage());
+			msg += PrintUtil.genDataLine("READ", 0);
+			msg += PrintUtil.genHeader("Application", "got message", false, 0);
 		}
 	}
 	
@@ -114,7 +123,7 @@ public class Main implements Observer {
 	 * @param name of user
 	 * @param pass of user
 	 */
-	public boolean tryLogin(String name, String pass){ //<- this cannot be done easily, only by polling another client but this takes too much time
+	public boolean tryLogin(String name, String pass){ 
 		this.name = name;
 		try {
 			// generate hash of password (safer for most passwords)

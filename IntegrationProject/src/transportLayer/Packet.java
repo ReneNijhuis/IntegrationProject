@@ -214,6 +214,10 @@ public class Packet {
 		updateHash();
 	}
 	
+	public void setPort(int port) {
+		this.port = port;
+	}
+	
 	public void decrementTTL(){
 		TTL--;
 	}
@@ -241,6 +245,7 @@ public class Packet {
 		}
 		answer.setDestination(packet.getSource());
 		answer.setSource(packet.getDestination());
+		answer.setPort(InternetProtocol.MULTICAST_PORT);
 		answer.setPacketData(data);
 		return answer;	
 	}
@@ -260,7 +265,8 @@ public class Packet {
 			// will probably never happen
 			return null;
 		}
-		answer.setPacketData(data);
+		answer.setPort(InternetProtocol.MULTICAST_PORT);
+		answer.setPacketData(data);	
 		return answer;	
 	}
 	

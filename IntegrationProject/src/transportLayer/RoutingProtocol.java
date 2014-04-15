@@ -19,14 +19,13 @@ import connectionLayer.InternetProtocol;
  * 
  * @author Florian Mansvelder en Rob van Emous
  */
-public class RoutingProtocol implements Observer {
+public class RoutingProtocol extends Observable implements Observer {
 
 	public static final int HEARTBEAT_INTERVAL = 500; //ms
 	private static final int TIME_OUT = 3 * HEARTBEAT_INTERVAL;
 	
 	private PacketType packetType = PacketType.ROUTING;
-	
-	
+		
 	private ArrayList<NodeInfo> connectedNodes = new ArrayList<NodeInfo>();
 																
 	private boolean updatereceived = false; //used for knowing whether routing table has to be updated
@@ -38,6 +37,7 @@ public class RoutingProtocol implements Observer {
 
 	public RoutingProtocol(Main main, PacketRouter router) {	
 		this.router = router;
+		router.start();
 		clientName = main.name;
 	}
 	
@@ -48,19 +48,37 @@ public class RoutingProtocol implements Observer {
 				while (!stop){
 					long startTime = System.currentTimeMillis();
 					sendHeartBeat();
-					if (updatereceived){
-						SendMap();
+					deleteTimedOutHosts();
+					if (updatereceived) {	
+						updateRouterRules();
+						SendMap();	
 						updatereceived = false;
-						for(NodeInfo node : connectedNodes){
-							router.addRule(new ForwardRule(null, node.getNodeIp(), ForwardAction.FORWARD_READ));
-						}
 					}
-					deleteHost();
 					int timeDiff = (int) (System.currentTimeMillis() - startTime);
 					try {
 						Thread.sleep(HEARTBEAT_INTERVAL - timeDiff);
 					} catch (InterruptedException e) {}
 				}
+			}
+
+			private void deleteTimedOutHosts() {
+				ArrayList<NodeInfo> toBeDeleted = new ArrayList<NodeInfo>();
+				for (NodeInfo node : connectedNodes) {
+					if (node.isTimedOut(TIME_OUT)) {
+						toBeDeleted.add(node);
+					}
+				}
+				synchronized (connectedNodes) {
+					connectedNodes.removeAll(toBeDeleted);
+				}	
+			}
+
+			private void updateRouterRules() {
+				router.removeAllRules();
+				for (NodeInfo node : connectedNodes) {
+					router.addRule(new ForwardRule(null, node.getNodeIp(), ForwardAction.FORWARD_READ));
+				}
+				
 			}
 		});
 		thread.start();
@@ -74,13 +92,16 @@ public class RoutingProtocol implements Observer {
 	}
 	
 	/**
-	 * send a packet with routing table as byte[]
+	 * send a packet with routing table.
 	 */
 	public void SendMap(){
-		byte[] mapData = createMapData();
+		byte[] mapData = NodeInfoToData();
 		router.sendPacket(Packet.generatePacket(mapData,(short) 1));
 	}
 
+	/**
+	 * send a delete packet.
+	 */
 	public void sendDelete(InetAddress removedIP) {	
 		sendRoutingPacket(RoutingType.DELETE, getMaxHops(), removedIP.toString());		
 	}
@@ -96,112 +117,98 @@ public class RoutingProtocol implements Observer {
 		router.sendPacket(Packet.generatePacket(toSend.getBytes(),(short) TTL));
 	}
 	
-	public Map<InetAddress, Integer> getRoutingTable(){
-		return hopsPerNode;
-	}
-
-	public int getTTL(InetAddress destination){
-		return hopsPerNode.get(destination);
-	}
-	
 	/**
-	 * updates the routing table according to the received routing table
-	 */
-	public void updateHopsPerNode(){
-		List<InetAddress> keys = new ArrayList<InetAddress>(receivedHopsPerNode.keySet());
-		for(int i = 0; i < receivedHopsPerNode.size(); i ++){
-			if(!inetaddresses.contains(keys.get(i))){
-				inetaddresses.add(keys.get(i));
-			}
-		}
-		for(int i = 0; i < inetaddresses.size(); i ++){
-			if(i != InternetProtocol.MULTICAST_ADDRESS.getBytes()[3]){
-				if(receivedHopsPerNode.containsKey(i)){
-					if(!hopsPerNode.containsKey(inetaddresses.get(i)) || hopsPerNode.get(inetaddresses.get(i)) > receivedHopsPerNode.get(inetaddresses.get(i))+1){
-						hopsPerNode.put(inetaddresses.get(i),receivedHopsPerNode.get(inetaddresses.get(i))+1);
-					}
-				}
-			}
-		}
-	}
-	
-	
-	/**
-	 * fills the byte[] MapData with the routing table along with three-byte identifier as first three bytes
-	 */
-	public void fillMap(){
-		byte[] MapData2 = hopsPerNode.toString().getBytes();
-		MapData = new byte[MapData2.length + 3];
-		for(int i = 0; i < MapData2.length; i ++){
-			MapData[i + 3] = MapData2[i];
-		}
-		MapData[0] = packetByte;
-		MapData[1] = 0x34;
-		MapData[2] = 0x12;
-	}
-	/**
-	 * removes a directlink from the table when the direct link times out
-	 */
-	public void deleteHost(){
-		for (int i = 0; i < inetaddresses.size(); i++){
-			long time = System.currentTimeMillis();
-			if (directLinks.get(inetaddresses.get(i)) - time > TIME_OUT && hopsPerNode.get(inetaddresses.get(i))==0){
-				directLinks.remove(inetaddresses.get(i));
-				hopsPerNode.remove(inetaddresses.get(i));
-				inetaddresses.remove(i);
-				sendDelete(inetaddresses.get(i));
-				router.removeRule(new ForwardRule(null, inetaddresses.get(i), ForwardAction.FORWARD_READ));
-				updatereceived = true;
-			}
-		}
-	}
-	
-	/**
-	 * Receives packets, updates directlinks when a heartbeat is received if necessary and resets time out timer
-	 * fills receivedHopsPerNode if MapData received, noted by identifiers
+	 * Receives packets, updates routing table when a heartbeat or update is received 
+	 * and resets time out timer.
 	 */
 	public void update(Observable observable, Object object) {
 		if (observable instanceof PacketRouter && object instanceof Packet) {
 			Packet packet = (Packet)object;
+			// extract packet type
 			byte[] data = packet.getPacketData();		
 			if(data[0] == packetType.toByte()){
+				updatereceived = true;
+				// extract source
+				InetAddress src = packet.getSource();
+				// extract routing type
 				RoutingType routingType = RoutingType.getType(data[1]);
+				// extract actual data
 				byte[] actualData = new byte[data.length - 2];
-				System.arraycopy(data, 2, actualData, 0, data.length);
+				System.arraycopy(data, 2, actualData, 0, data.length);	
 				if (routingType == RoutingType.HEARTBEAT) {
-					
+					NodeInfo sender = getNodeByIp(src);
+					if (sender == null) {
+						// new neighbor
+						String name = new String(actualData);
+						if (name == null || name.length() == 0) {
+							// drop
+							return;
+						}
+						synchronized (connectedNodes) {
+							connectedNodes.add(new NodeInfo(name, src));
+						}
+					} else {
+						// known neighbor, update last heartbeat time
+						sender.updateHeartBeat();
+						updatereceived = false; // no real update received
+					}
 				} else if (routingType == RoutingType.TABLE_UPDATE) {
+					ArrayList<NodeInfo> update;
+					try {
+						update = dataToNodeInfo(actualData);
+					} catch (MalformedPacketException e) {
+						// drop
+						return;
+					}
+					HashMap<InetAddress, String> knownNodes = getIpNameCombos();
+					HashMap<InetAddress, String> updateNodes = getIpNameCombos(update);
 					
-				} else if (routingType == RoutingType.DELETE) {
-					router.removeRule(new ForwardRule(null, connectedNodes., ForwardAction.FORWARD_READ));
-				}
-				
-				if(new String(packetData).contains("Delete")){
-					for (int i = 0; i < inetaddresses.size(); i++){
-						if (new String(packetData).contains(inetaddresses.get(i).toString())){
-							directLinks.remove(inetaddresses.get(i));
-							hopsPerNode.remove(inetaddresses.get(i));
-							inetaddresses.remove(i);
-							router.removeRule(new ForwardRule(null, inetaddresses.get(i), ForwardAction.FORWARD_READ));
-							updatereceived = true;
+					ArrayList<NodeInfo> newNodes = new ArrayList<NodeInfo>();
+					ArrayList<NodeInfo> possibleUpdateNodes = new ArrayList<NodeInfo>();
+					
+					for (InetAddress node : updateNodes.keySet()) {
+						if (updateNodes.get(node).equals(knownNodes.get(node))) {
+							possibleUpdateNodes.add(getNodeByIp(update, node));
+						} else {
+							newNodes.add(getNodeByIp(update, node));
 						}
 					}
-				}
-				if(new String(packetData).contains(HEARTBEAT_MESSAGE)){
-					if (!inetaddresses.contains(packet.getCurrentSource())){
-						inetaddresses.add(packet.getCurrentSource());
-						updatereceived = true;
+					// add all new nodes
+					synchronized (connectedNodes) {
+						connectedNodes.addAll(newNodes);
 					}
-					directLinks.put(packet.getCurrentSource(),(System.currentTimeMillis()));
-				}
-				if(packetData[0] == 0x34 && packetData[1] == 0x12){
-					receivedData = new byte[packetData.length - 2];
-					for (int i = 0; i<receivedData.length; i++){
-						receivedData[i] = packet.getPacketData()[i + 2];
+					// possibly update existing nodes (shorter routes)
+					for (NodeInfo node : possibleUpdateNodes) {
+						NodeInfo currNodeInfo = getNodeByIp(node.getNodeIp());
+						if (node.getHopDistance() < currNodeInfo.getHopDistance() 
+								&& !currNodeInfo.isNeighbor()
+							) {
+							//shorter route and no neighbor: update
+							synchronized (connectedNodes) {
+								connectedNodes.remove(currNodeInfo);
+								connectedNodes.add(node);
+							}
+						}
 					}
-					receivedData = packetData;
-					receivedHopsPerNode = byteToMap(receivedData);
-					updatereceived = true;
+				} else if (routingType == RoutingType.DELETE) {
+					InetAddress toBeDeleted;
+					try {
+						toBeDeleted = InetAddress.getByAddress(actualData);
+					} catch (UnknownHostException e) {
+						// drop
+						return;
+					}
+					NodeInfo tbd = getNodeByIp(toBeDeleted);
+					if (tbd == null) {
+						// drop
+						return;
+					}
+					synchronized (connectedNodes) {
+						connectedNodes.remove(tbd);
+					}		
+				} else {
+					// drop
+					updatereceived = false;	
 				}
 			}
 		} else if (observable instanceof PacketRouter && object instanceof String) {
@@ -211,49 +218,115 @@ public class RoutingProtocol implements Observer {
 			}
 		}
 	}
-
+	
 	/**
-	 * Converts a map to a byte[].
-	 * @param map
-	 * @return byte[]
+	 * Converts the list of NoteInfo to a byte[].
 	 */
-	public static byte[] mapToByte(Map<InetAddress,Integer> map){
-		List<InetAddress> keys = new ArrayList<InetAddress>(map.keySet());
-		byte[] keysarray = new byte[5 * (keys.size())];
-		for (int i = 0; i < keysarray.length; i += 5) {
-			byte[] key = keys.get(i%4).getAddress();
-			System.arraycopy(key, 0, keysarray, i, key.length);
-			try {
-				keysarray[i + 4] = (byte) (int) map.get(InetAddress.getByAddress(key));
-			} catch (UnknownHostException e) {}
+	public byte[] NodeInfoToData() {
+		String mapData = "";
+		for (NodeInfo node : connectedNodes) {
+			mapData += node.toByteArray();
+			if (!connectedNodes.get(connectedNodes.size() - 1).equals(node)) {
+				mapData += ";";
+			}
 		}
-		return keysarray;
+		return mapData.getBytes();
 	}
 
 	/**
-	 * Converts byte[] to a map.
-	 * @param bytes
-	 * @return map
+	 * Converts a list of NoteInfo to a byte[]. 
+	 * @param data the data to convert
 	 */
-	public static Map<InetAddress,Integer> byteToMap(byte[] bytes){
-		Map<InetAddress,Integer> map = new HashMap<InetAddress,Integer>();
-		for (int i = 0; i < bytes.length; i += 5) {
-			byte[] res = new byte[4];
-			System.arraycopy(bytes, i, res, 0, 4);
-			try {
-				map.put(InetAddress.getByAddress(res),(int) bytes[i + 4]);
-			} catch (UnknownHostException e) {}
+	public byte[] NodeInfoToData(ArrayList<NodeInfo> nodes) {
+		String mapData = "";
+		for (NodeInfo node : nodes) {
+			mapData += node.toByteArray();
+			if (!nodes.get(nodes.size() - 1).equals(node)) {
+				mapData += ";";
+			}
 		}
-		return map;
+		return mapData.getBytes();
+	}
+
+	/**
+	 * Converts a byte[] to a list of NoteInfo.
+	 * @param data the data to convert
+	 */
+	public ArrayList<NodeInfo> dataToNodeInfo(byte[] data) throws MalformedPacketException {
+		ArrayList<NodeInfo> nodes = new ArrayList<NodeInfo>();
+		String[] dataFragments = new String(data).split(";");
+		for (String s : dataFragments) {
+			NodeInfo node = new NodeInfo(s);
+			node.setHopDistance(node.getHopDistance() + 1); // add link cost (one hop)
+			node.setNeighbor(false);
+			nodes.add(node);
+		}
+		// remove yourself, we do not want to chat with ourselves.
+		NodeInfo self = null;
+		for (NodeInfo node : nodes) {
+			if (node.getNodeIp().equals(Main.IP)) {
+				self = node;
+			}
+		}
+		nodes.remove(self);
+		return nodes;
+	}
+	
+	public ArrayList<NodeInfo> getNonNeigbors()  {
+		ArrayList<NodeInfo> nonNeigbors = new ArrayList<NodeInfo>();
+		for (NodeInfo node : connectedNodes) {
+			if (!node.isNeighbor()) {
+				nonNeigbors.add(node);
+			}
+		}
+		return nonNeigbors;
+	}
+	
+	public ArrayList<NodeInfo> getNeigbors()  {
+		ArrayList<NodeInfo> neigbors = new ArrayList<NodeInfo>();
+		for (NodeInfo node : connectedNodes) {
+			if (node.isNeighbor()) {
+				neigbors.add(node);
+			}
+		}
+		return neigbors;
 	}
 	
 	public HashMap<InetAddress, String> getIpNameCombos() {
-		HashMap<InetAddress, String> map = new HashMap<InetAddress, String>();
-		
+		HashMap<InetAddress, String> combos = new HashMap<InetAddress, String>();
+		for (NodeInfo node : connectedNodes) {
+			combos.put(node.getNodeIp(), node.getNodeName());
+		}
+		return combos;		
+	}
+	
+	public HashMap<InetAddress, String> getIpNameCombos(ArrayList<NodeInfo> nodes) {
+		HashMap<InetAddress, String> combos = new HashMap<InetAddress, String>();
+		for (NodeInfo node : connectedNodes) {
+			combos.put(node.getNodeIp(), node.getNodeName());
+		}
+		return combos;		
+	}
+	
+	public HashMap<InetAddress, Integer> getIpHopCombos() {
+		HashMap<InetAddress, Integer> combos = new HashMap<InetAddress, Integer>();
+		for (NodeInfo node : connectedNodes) {
+			combos.put(node.getNodeIp(), node.getHopDistance());
+		}
+		return combos;		
 	}
 	
 	public NodeInfo getNodeByIp(InetAddress ip) {
 		for (NodeInfo node : connectedNodes) {
+			if (node.getNodeIp().equals(ip)) {
+				return node;
+			}
+		}
+		return null;
+	}
+	
+	public NodeInfo getNodeByIp(ArrayList<NodeInfo> nodes, InetAddress ip) {
+		for (NodeInfo node : nodes) {
 			if (node.getNodeIp().equals(ip)) {
 				return node;
 			}
@@ -269,7 +342,7 @@ public class RoutingProtocol implements Observer {
 		}
 		return null;
 	}
-	
+
 	private int getMaxHops() {
 		int max = 0;
 		for (NodeInfo node : connectedNodes) {
@@ -280,9 +353,15 @@ public class RoutingProtocol implements Observer {
 		}
 		return max;
 	}
+	
+	@Override
+	public void notifyObservers(Object object) {
+		setChanged();
+		super.notifyObservers(object);
+	}
 
 	/**
-	 * Shuts down routing protocol and optionally all lower layers.
+	 * Shuts down routing protocol.
 	 */
 	public void shutDown() {
 		if (!stop) {

@@ -17,15 +17,38 @@ public class NodeInfo {
 	private int hopDistance; 	// if neighbor this is not relevant
 	private long lastHeartBeat; // if not neighbor this is not relevant
 	
-	public NodeInfo(String nodeName, InetAddress nodeIp, boolean isNeighbor) {
+	/**
+	 * Add a neighbor.
+	 * @param nodeName name of neighbor
+	 * @param nodeIp ip of neigbor
+	 */
+	public NodeInfo(String nodeName, InetAddress nodeIp) {
 		this.nodeName = nodeName;
 		this.nodeIp = nodeIp;
-		this.isNeighbor = isNeighbor;
+		this.isNeighbor = true;
+		hopDistance = 1;
+		updateHeartBeat();
 	}
 	
-	public NodeInfo(byte[] packetData) throws MalformedPacketException {
-		String data = new String(packetData);
-		String[] dataParts = data.split("\"");
+	/**
+	 * Add a non-neighbor.
+	 * @param nodeName name of non-neighbor
+	 * @param nodeIp ip of non-neigbor
+	 */
+	public NodeInfo(String nodeName, InetAddress nodeIp, int hopDistance) {
+		this.nodeName = nodeName;
+		this.nodeIp = nodeIp;
+		this.isNeighbor = false;
+		this.hopDistance = hopDistance;
+		updateHeartBeat();
+	}
+	
+	/**
+	 * Add a node from an update-packet.
+	 * @param packetData containing the node info
+	 */
+	public NodeInfo(String packetData) throws MalformedPacketException {
+		String[] dataParts = packetData.split("\"");
 		nodeName = dataParts[0];
 		try {
 			nodeIp = InetAddress.getByName(dataParts[1]);
@@ -67,8 +90,8 @@ public class NodeInfo {
 		this.hopDistance = hopDistance;
 	}
 	
-	public void setLastHeartBeat(long lastHeartBeat) {
-		this.lastHeartBeat = lastHeartBeat;
+	public void updateHeartBeat() {
+		this.lastHeartBeat = System.currentTimeMillis();
 	}
 	
 	public boolean isTimedOut(int timeOutTime) {

@@ -67,13 +67,17 @@ public class Main implements Observer {
 		chatUI.setCompagionName(compagionName);
 		// TODO TCP implementation (setup + start)
 		router.deleteObserver(this);
+		tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp());
 		tcp.addObserver(this);
+		tcp.start();
 		switchUI();	
 	}
 	
 	public void toPublic() {
 		multiChat = true;
-		// TODO TCP implementation (shutdown)
+		tcp.deleteObserver(this);
+		tcp.shutDown(false, true);
+		router.addObserver(this);
 		switchUI();
 	}
 	
@@ -96,10 +100,14 @@ public class Main implements Observer {
 			type = PacketType.CHAT_PRIV;
 		}
 		// create and encrypt packet
-		ChatPacket chatPacket = new ChatPacket(type, name, message);
+		String chatPacket = type.toByte() + name + "\"" +  message;
 		byte[] cipherText = encrypt(chatPacket);
-		//TODO TCP
-		boolean succes = router.sendPacket(Packet.generatePacket(cipherText));	
+		boolean succes = false;
+		if (multiChat) {
+			succes = router.sendPacket(Packet.generatePacket(cipherText));
+		} else {
+			//TODO TCP
+		}
 		if (succes) {
 			mainUI.addMessage(name, message);
 		} else {
@@ -131,22 +139,32 @@ public class Main implements Observer {
 			} 
 		}
 		else if (o.equals(router) && arg instanceof Packet) {
-			String msg = PrintUtil.genHeader("Application", "got message", true, 0);
-			msg += PrintUtil.genDataLine("Action: ", 0, false);
-			byte[] message = ((Packet)arg).getPacketData();
-			ChatPacket packet = null;
-			try {
-				String plaintext = decrypt(message);
-				packet = new ChatPacket(plaintext);
-			} catch (MalformedCipherTextException e) {
-				// drop packet
-				msg += PrintUtil.genDataLine("DROP - encryption", 0);
-			} catch (UnknownPacketTypeException e) {
-				// drop packet
-				msg += PrintUtil.genDataLine("DROP - packet type", 0);
+			// get all data from packet
+			byte[] data = ((Packet)arg).getPacketData();
+			// extract packet type
+			PacketType packetType = PacketType.getType(data[0]);
+			// extract actual data (sender name + message)
+			byte[] cipherText = new byte[data.length - 1];
+			System.arraycopy(data, 1, cipherText, 0, data.length);
+			String msg = "";
+			if ((packetType.equals(PacketType.CHAT_PUBL) && multiChat) || 
+					packetType.equals(PacketType.CHAT_PRIV) && !multiChat) {
+				msg = PrintUtil.genHeader("Application", "got message", true, 0);
+				msg += PrintUtil.genDataLine("Action: ", 0, false);
+				String plaintext = null;
+				try {
+					plaintext = decrypt(cipherText);
+					String[] parts = plaintext.split("\"");
+					mainUI.addMessage(parts[0], parts[1]);
+					msg += PrintUtil.genDataLine("READ", 0);
+				} catch (MalformedCipherTextException e) {
+					// drop packet
+					msg += PrintUtil.genDataLine("DROP - encryption", 0);
+				}
+			} else {
+				//drop
+				return;
 			}
-			mainUI.addMessage(packet.getSenderName(), packet.getMessage());
-			msg += PrintUtil.genDataLine("READ", 0);
 			msg += PrintUtil.genHeader("Application", "got message", false, 0);
 			PrintUtil.printTextln(msg);
 		}
@@ -178,18 +196,15 @@ public class Main implements Observer {
 		// start routing protocol
 		routing = new RoutingProtocol(this, router);
 		routing.start();
-		// start Packet-tracker (our kind of TCP)//
-		//tcp = new PacketTracker(router);
-		//tcp.start();
 		return true;
 	}
 	
-	private byte[] encrypt(ChatPacket chatPacket) {
+	private byte[] encrypt(String chatPacket) {
 		byte[] cipherText;
 		if (multiChat) {
-			cipherText = publEncryptor.encrypt(chatPacket.toString().getBytes());
+			cipherText = publEncryptor.encrypt(chatPacket.getBytes());
 		} else {
-			cipherText = privEncryptor.encrypt(chatPacket.toString().getBytes());
+			cipherText = privEncryptor.encrypt(chatPacket.getBytes());
 		}
 		return cipherText;
 	}

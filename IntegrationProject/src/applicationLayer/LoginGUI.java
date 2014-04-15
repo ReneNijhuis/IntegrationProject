@@ -30,6 +30,8 @@ import javax.swing.JTextField;
 public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	private static final long serialVersionUID = -482910055372612747L;
 	
+	private static final int MAX_LENGTH = 16;
+	
 	private int windowWidth = 450;
 	private int windowHeight = 150;
 	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
@@ -189,8 +191,16 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		boolean validInput = containsLetterOrNumber(s);
 		if (item.equals(name)) {
 			nameTyped = validInput;
+			if (name.getText().length() > MAX_LENGTH) {
+				addPopup("Username too long", "Max username length is " + MAX_LENGTH, false);
+				name.setText(name.getText().substring(0, MAX_LENGTH));
+			}
 		} else if (item.equals(password)) {
 			passwordTyped = validInput;
+			if (new String(password.getPassword()).length() > MAX_LENGTH) {
+				addPopup("Username too long", "Max password length is " + MAX_LENGTH, false);
+				password.setText(new String(password.getPassword()).substring(0, MAX_LENGTH));
+			}
 		}
 		
 	}
@@ -225,7 +235,6 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		(int)(screenSize.getHeight() / 2 - windowSize.height / 2)
 		);
 	}
-
 
 	@Override
 	public void keyPressed(KeyEvent e) {}

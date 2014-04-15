@@ -115,10 +115,20 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
 			message += PrintUtil.START + "DROP - src\n";
-		} else if (dest.equals(ownAddress) || dest.equals(client.MULTICAST_ADDR)) {
+		} else if (!currDest.equals(bcAddr)) {
+			// drop packet
+			message += PrintUtil.START + " DROP - curr dest\n";
+		} else if (dest.equals(ownAddress)) {
 			// read packet, not forward
 			message += PrintUtil.START + "READ, NOT FORWARD\n";	
 			notifyObservers(packet);
+		} else if (dest.equals(bcAddr)) {
+			// read and forward packet
+			message += PrintUtil.START + "READ AND FORWARD\n";	
+			notifyObservers(packet);
+			try {
+				client.sendPacket(Packet.generateForward(packet, packet.getPacketData()));
+			} catch (MalformedPacketException e) {}	
 		} else {
 			// forward according to routing table
 			synchronized (routingTable) {

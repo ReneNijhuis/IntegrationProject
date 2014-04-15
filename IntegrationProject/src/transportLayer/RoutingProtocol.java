@@ -13,7 +13,8 @@ import connectionLayer.InternetProtocol;
 
 public class RoutingProtocol implements Observer {
 
-	public static final int HEARTBEAT_INTERVAL = 2000; //ms
+	public static final int HEARTBEAT_INTERVAL = 500; //ms
+	private static final int TIME_OUT = 3 * HEARTBEAT_INTERVAL;
 	private static final String HEARTBEAT_MESSAGE = "Secretkey=Kaviaar";
 	private static final byte[] HEARTBEAT_MESSAGE_BYTES = HEARTBEAT_MESSAGE.getBytes();
 
@@ -41,15 +42,13 @@ public class RoutingProtocol implements Observer {
 	 */
 	public void heartBeat() {
 		byte[] toSend = new byte[HEARTBEAT_MESSAGE_BYTES.length+1];
-		for(int i = 0; i < toSend.length-1; i ++){
-			toSend[i + 1] = HEARTBEAT_MESSAGE_BYTES[i];
-		}
 		toSend[0] = packetByte;
-		try {
-			router.sendPacket(new Packet(ownAddress, ownAddress, InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS), (short) 1, toSend));
-		} catch (UnknownHostException | MalformedPacketException e) {}
+		for(int i = 1; i < toSend.length; i++){
+			toSend[i] = HEARTBEAT_MESSAGE_BYTES[i - 1];
+		}		
+		router.sendPacket(Packet.generatePacket(toSend,(short) 1));
 	}
-
+	
 	public Map<InetAddress, Integer> getRoutingTable(){
 		return hopsPerNode;
 	}
@@ -129,7 +128,7 @@ public class RoutingProtocol implements Observer {
 	public void deleteHost(){
 		for (int i = 0; i < inetaddresses.size(); i++){
 			long time = System.currentTimeMillis();
-			if (directLinks.get(inetaddresses.get(i)) - time > 1000 && hopsPerNode.get(inetaddresses.get(i))==0){
+			if (directLinks.get(inetaddresses.get(i)) - time > TIME_OUT && hopsPerNode.get(inetaddresses.get(i))==0){
 				directLinks.remove(inetaddresses.get(i));
 				hopsPerNode.remove(inetaddresses.get(i));
 				inetaddresses.remove(i);
@@ -169,11 +168,10 @@ public class RoutingProtocol implements Observer {
 					}
 					directLinks.put(packet.getCurrentSource(),(System.currentTimeMillis()));
 				}
-				if(packetData[0] == 0x34 && 
-						packetData[1] == 0x12){
-					receivedData = new byte[packetData.length-2];
+				if(packetData[0] == 0x34 && packetData[1] == 0x12){
+					receivedData = new byte[packetData.length - 2];
 					for (int i = 0; i<receivedData.length; i++){
-						receivedData[i] = packet.getPacketData()[i+2];
+						receivedData[i] = packet.getPacketData()[i + 2];
 					}
 					receivedData = packetData;
 					receivedHopsPerNode = byteToMap(receivedData);
@@ -189,7 +187,7 @@ public class RoutingProtocol implements Observer {
 	}
 
 	/**
-	 * converts a map to a byte[]
+	 * Converts a map to a byte[].
 	 * @param map
 	 * @return byte[]
 	 */
@@ -207,7 +205,7 @@ public class RoutingProtocol implements Observer {
 	}
 
 	/**
-	 * converts byte[] to a map
+	 * Converts byte[] to a map.
 	 * @param bytes
 	 * @return map
 	 */
@@ -225,7 +223,6 @@ public class RoutingProtocol implements Observer {
 
 	public void start() {
 		Thread thread = new Thread(new Runnable() {
-
 			@Override
 			public void run() {
 				while (!stop){

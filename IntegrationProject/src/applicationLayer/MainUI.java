@@ -54,6 +54,9 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private JButton button1 = new JButton();
 	private JPanel panel1 = new JPanel(new GridBagLayout());
 	private JMenuItem logOutItem = new JMenuItem("Logout");
+	private JPanel buttonpanel = new JPanel();
+	private JPanel insertpanel = new JPanel();
+	private GroupLayout layout = new GroupLayout(buttonpanel);
 
 	private ArrayList<Button> users = new ArrayList<Button>();
 
@@ -77,11 +80,107 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		setVisible(false);
 	}
 
+	public void addUser(String name){
+		if (!connectedIps.contains(name)){
+			panel1.remove(insertpanel);
+			GridBagConstraints con6 = new GridBagConstraints();
+			con6.fill = GridBagConstraints.BOTH;
+			con6.weightx = 1.0;
+			con6.weighty = 1.0;
+			con6.gridx = 1;
+			con6.gridy = 0;
+			con6.ipady = (int) (windowHeight / 5);
+			con6.ipadx = (int) (windowWidth / 17);
+			con6.insets = insets;
+			connectedIps.add(name);
+			insertpanel.removeAll();
+			insertpanel.add(changeUI());
+			insertpanel.revalidate(); 
+			insertpanel.repaint();
+			panel1.add(changeUI(),con6);
+			panel1.revalidate(); 
+			panel1.repaint();
+		}
+	}
+	
+	public void deleteUser(String name){
+		if (connectedIps.contains(name)){
+			panel1.remove(insertpanel);
+			connectedIps.remove(name);
+			insertpanel.removeAll();
+			insertpanel.add(changeUI());
+			insertpanel.revalidate(); 
+			insertpanel.repaint();
+			GridBagConstraints con6 = new GridBagConstraints();
+			con6.fill = GridBagConstraints.BOTH;
+			con6.weightx = 1.0;
+			con6.weighty = 1.0;
+			con6.gridx = 1;
+			con6.gridy = 0;
+			con6.ipady = (int) (windowHeight / 5);
+			con6.ipadx = (int) (windowWidth / 17);
+			con6.insets = insets;
+			panel1.add(changeUI(),con6);
+			panel1.revalidate(); 
+			panel1.repaint();
+		}
+	}
+	
+	public JPanel changeUI(){
+		buttonpanel.removeAll();
+		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);
+		textarea2 = new JTextArea();
+		textarea2.setFont(new Font("Calibri", Font.ITALIC, 22));
+		JTextArea toparea = new JTextArea();
+		toparea.setFont(new Font("Calibri", Font.ITALIC, 28));
+		toparea.setBackground(new Color(34,121,220));
+		toparea.setForeground(new Color(34,220,214));
+		toparea.setEditable(false);
+		toparea.setText("Connected Devices:");
+		buttonpanel.add(textarea2);
+		JScrollPane js = new JScrollPane(buttonpanel);
+		layout = new GroupLayout(buttonpanel);
+		buttonpanel.setLayout(layout);
+		layout.setAutoCreateGaps(true);
+		layout.setAutoCreateContainerGaps(true);
+		getButtons();
+		GroupLayout.SequentialGroup sgroup = layout.createSequentialGroup();
+		GroupLayout.SequentialGroup vgroup = layout.createSequentialGroup();
+		GroupLayout.SequentialGroup v2group = layout.createSequentialGroup();
+		GroupLayout.ParallelGroup pgroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+		GroupLayout.ParallelGroup p2group = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+		for (Button c : users) {
+			pgroup.addComponent(c);
+		}
+		for (Button c : users) {
+			v2group.addComponent(c);
+			v2group.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE));
+		}
+		layout.setHorizontalGroup(sgroup.addGroup(pgroup));
+		layout.setVerticalGroup(vgroup.addGroup(p2group.addGroup(v2group)));
+		GridBagConstraints con1 = new GridBagConstraints();
+		GridBagConstraints con5 = new GridBagConstraints();
+		con1.fill = GridBagConstraints.BOTH;
+		con1.gridx = 0;
+		con1.gridy = 1;
+		con1.ipady = (int) (windowHeight / 1.8);
+		con1.ipadx = (int) (windowWidth / 5);
+		con5.fill = GridBagConstraints.BOTH;
+		con5.weightx = 1.0;
+		con5.weighty = 1.0;
+		con5.gridx = 0;
+		con5.gridy = 0;
+		con5.ipady = (int) (windowHeight / 17);
+		con5.ipadx = (int) (windowHeight / 17);
+		insertpanel = new JPanel(new GridBagLayout());
+		insertpanel.setBackground(new Color(34,121,220));
+		insertpanel.add(toparea,con5);
+		insertpanel.add(js,con1);
+		insertpanel.setBorder(border2);
+		return insertpanel;
+	}
+
 	public void getButtons(){
-		connectedIps.add("wim");
-		connectedIps.add("sjaak");
-		connectedIps.add("klaas");
-		connectedIps.add("piet");
 		ArrayList<Button> buttons = new ArrayList<Button>();
 		for (int i = 0; i < connectedIps.size(); i++){
 			Button butto = new Button(connectedIps.get(i));
@@ -92,6 +191,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			butto.setForeground(new Color(34,121,220));
 			buttons.add(butto);
 		}
+		users = new ArrayList<Button>();
 		for (int i = 0; i < buttons.size(); i++){
 			users.add(buttons.get(i));
 			buttons.get(i).addActionListener(this);
@@ -99,7 +199,14 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	}
 
 	public void createInterface(){
-
+		textfield1 = new JTextField();
+		textarea1 = new JTextArea();
+		textarea2 = new JTextArea();
+		button1 = new JButton();
+		panel1 = new JPanel(new GridBagLayout());
+		logOutItem = new JMenuItem("Logout");
+		buttonpanel = new JPanel();
+		layout = new GroupLayout(buttonpanel);
 		textarea1.setEditable(false);
 		textarea2.setEditable(false);		
 
@@ -178,13 +285,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 						);
 			}});
 		optionMenu.add(helpItem);
-		logOutItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addPopup("Logout", 
-						"Click here to logout.\n", false
-						);
-			}});
+		logOutItem.addActionListener(this);
 		optionMenu.add(logOutItem);
 		menuBar.add(optionMenu);
 		setJMenuBar(menuBar);
@@ -212,15 +313,14 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		toparea.setForeground(new Color(34,220,214));
 		toparea.setEditable(false);
 		toparea.setText("Connected Devices:");
-		JPanel buttonpanel = new JPanel();
+
 		buttonpanel.add(textarea2);
 		JScrollPane js = new JScrollPane(buttonpanel);
-		GroupLayout layout = new GroupLayout(buttonpanel);
+
 		buttonpanel.setLayout(layout);
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
 		getButtons();
-
 		GroupLayout.SequentialGroup sgroup = layout.createSequentialGroup();
 		GroupLayout.SequentialGroup vgroup = layout.createSequentialGroup();
 		GroupLayout.SequentialGroup v2group = layout.createSequentialGroup();
@@ -237,7 +337,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		layout.setHorizontalGroup(sgroup.addGroup(pgroup));
 		layout.setVerticalGroup(vgroup.addGroup(p2group.addGroup(v2group)));
 
-		JPanel insertpanel = new JPanel(new GridBagLayout());
+		insertpanel = new JPanel(new GridBagLayout());
 		insertpanel.setBackground(new Color(34,121,220));
 		insertpanel.add(toparea,con5);
 		insertpanel.add(js,con1);
@@ -279,7 +379,6 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	public void addMessage(String name, String message) {
 		textarea1.append(name + ":\t" + message + "\n");		
 	}
-
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {

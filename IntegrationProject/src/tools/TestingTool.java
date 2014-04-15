@@ -1,10 +1,12 @@
 package tools;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Scanner;
 
 import encryptionLayer.Encryption;
+import encryptionLayer.MalformedCipherTextException;
 
 public class TestingTool {
 	
@@ -74,6 +76,9 @@ public class TestingTool {
 						break;
 					case "text":
 						testText();
+						break;
+					case "tracker":
+						new TrackerTest(input).runTest();
 						break;
 					default:
 						output("what? int, text or short?");
@@ -245,17 +250,23 @@ public class TestingTool {
 	
 	private boolean getResults(byte[] ba, int nr) {
 		byte[] encText = encrypt.encrypt(ba);
-		byte[] rebuiltText = encrypt.decrypt(encText).getBytes();
-		if (!Arrays.equals(rebuiltText, ba)) {
-			output("-------------------------------------------------");
-			output("Original text" + nr + ": " + textArrayToString(ba));		
-			output("Encryption of text" + nr + ": " + textArrayToString(encText));
-			output("Rebuilt text" + nr + ": " + textArrayToString(rebuiltText));
-			output("-------------------------------------------------");
+		try {
+			byte[] rebuiltText = encrypt.decrypt(encText).getBytes();
+			if (!Arrays.equals(rebuiltText, ba)) {
+				output("-------------------------------------------------");
+				output("Original text" + nr + ": " + textArrayToString(ba));		
+				output("Encryption of text" + nr + ": " + textArrayToString(encText));
+				output("Rebuilt text" + nr + ": " + textArrayToString(rebuiltText));
+				output("-------------------------------------------------");
+				return true;
+			} else {
+				return false;
+			}
+		} catch (MalformedCipherTextException e) {
+			output("ERROR: Something went wrong while decripting: " + "\n" +
+					textArrayToString(encText) + " the cipher text of " + textArrayToString(ba));
 			return true;
-		} else {
-			return false;
-		}
+		}		
 	}
 	
 	private String textArrayToString(byte[] ba) {
@@ -267,7 +278,16 @@ public class TestingTool {
 		return result;
 	}
 	
-	private void output(Object arg) {
+	public static void output(Object arg) {
+		if (arg instanceof String) {
+			Scanner scan = new Scanner((String) arg);
+			if (scan.next().equals("ERROR:")) {
+				System.err.println(((String) arg).substring(7, ((String) arg).length()));
+				scan.close();
+				return;
+			}
+			scan.close();
+		}		
 		System.out.println(arg);
 	}
 }

@@ -47,7 +47,7 @@ public class Main implements Observer {
 	private byte[] privPass;
 	private byte[] privIv;
 	
-	public InetAddress ip;
+	public static InetAddress IP;
 	
 	public Main() {
 		// start LoginGUI
@@ -64,6 +64,7 @@ public class Main implements Observer {
 		privPass = createHash(key);
 		privIv = createHash(privPass);
 		privEncryptor = new Encryption(privPass, privIv);
+		chatUI.setCompagionName(compagionName);
 		switchUI();
 	}
 	
@@ -142,6 +143,7 @@ public class Main implements Observer {
 			mainUI.addMessage(packet.getSenderName(), packet.getMessage());
 			msg += PrintUtil.genDataLine("READ", 0);
 			msg += PrintUtil.genHeader("Application", "got message", false, 0);
+			PrintUtil.printTextln(msg);
 		}
 	}
 	
@@ -163,13 +165,13 @@ public class Main implements Observer {
 		client.start();
 		// get local ip
 		GetIp getIp = new GetIp(client);
-		ip = getIp.getCurrentIp();
+		IP = getIp.getCurrentIp();
 		// start packet-router
 		router = new PacketRouter(client, this.pass);
 		router.addObserver(this);
 		router.start();	
 		// start routing protocol
-		routing = new RoutingProtocol(router, ip);
+		routing = new RoutingProtocol(router, IP);
 		routing.start();
 		// start Packet-tracker (our kind of TCP)//
 		//TODO tcp = new PacketTracker(router);

@@ -10,6 +10,7 @@ public class TrackerTestingRouter extends Observable {
 
 	private InetAddress address;
 	private TrackerTestingRouter ally;
+	private boolean dropNextPacket = false;
 	
 	public TrackerTestingRouter(int nr) throws UnknownHostException {
 		String addressToBe = "192.168.5." + nr;
@@ -19,16 +20,24 @@ public class TrackerTestingRouter extends Observable {
 	public boolean sendPacket(Packet sendablePacket) {
 		sendablePacket.setSource(address);
 		ally.receivePacket(sendablePacket);
-		TestingTool.output("Router at " + address.toString() + " gave packet to " + ally.getAddress().toString());
+		TestingTool.output("Router at " + address + " gave packet to " + ally.getAddress());
 		return true;
 	}
 
 	private void receivePacket(Packet sendablePacket) {
-		notifyObservers(sendablePacket);
+		if (!dropNextPacket) {
+			notifyObservers(sendablePacket);
+			TestingTool.output("Router at " + address + " received packet");
+		}
+		dropNextPacket = false;
 	}
 
 	public void shutDown(boolean selfDestruct, boolean appInit) {
-		TestingTool.output("TrackerTestingRouter on " + address.toString() + " stopped");
+		TestingTool.output("TrackerTestingRouter on " + address + " stopped");
+	}
+	
+	public void dropNext() {
+		dropNextPacket = true;
 	}
 	
 	@Override

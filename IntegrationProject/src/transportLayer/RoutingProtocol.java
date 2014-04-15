@@ -37,7 +37,7 @@ public class RoutingProtocol extends Observable implements Observer {
 
 	public RoutingProtocol(Main main, PacketRouter router) {	
 		this.router = router;
-		router.start();
+		router.addObserver(this);
 		clientName = main.name;
 	}
 	
@@ -56,7 +56,7 @@ public class RoutingProtocol extends Observable implements Observer {
 					}
 					int timeDiff = (int) (System.currentTimeMillis() - startTime);
 					try {
-						Thread.sleep(HEARTBEAT_INTERVAL - timeDiff);
+						Thread.sleep(timeDiff < HEARTBEAT_INTERVAL ? HEARTBEAT_INTERVAL - timeDiff : 0);
 					} catch (InterruptedException e) {}
 				}
 			}
@@ -113,9 +113,12 @@ public class RoutingProtocol extends Observable implements Observer {
 	 * @param TTL the TTL of the packet
 	 * @param data data of the packet
 	 */
-	private void sendRoutingPacket(RoutingType routingType, int TTL, String data) {
-		String toSend = packetType.toByte() + routingType.toByte() + data;	
-		router.sendPacket(Packet.generatePacket(toSend.getBytes(),(short) TTL));
+	private void sendRoutingPacket(RoutingType routingType, int TTL, String data) {	
+		byte[] toSend = new byte[data.length() + 2];
+		toSend[0] = packetType.toByte();
+		toSend[1] = routingType.toByte();
+		System.arraycopy(data.getBytes(), 0, toSend, 2, data.length());
+		router.sendPacket(Packet.generatePacket(toSend,(short) TTL));
 	}
 	
 	/**
@@ -135,7 +138,7 @@ public class RoutingProtocol extends Observable implements Observer {
 				RoutingType routingType = RoutingType.getType(data[1]);
 				// extract actual data
 				byte[] actualData = new byte[data.length - 2];
-				System.arraycopy(data, 2, actualData, 0, data.length);	
+				System.arraycopy(data, 2, actualData, 0, data.length - 2);	
 				if (routingType == RoutingType.HEARTBEAT) {
 					NodeInfo sender = getNodeByIp(src);
 					if (sender == null) {

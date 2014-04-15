@@ -57,7 +57,7 @@ public class Packet {
 		try { 
 			currentDestination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, index, index += IP_LENGTH));
 		} catch (UnknownHostException | ArrayIndexOutOfBoundsException e) {
-			throw new MalformedPacketException("Malformed 'dest'");
+			throw new MalformedPacketException("Malformed 'curr dest'");
 		}
 		try { 
 			destination = InetAddress.getByAddress(Arrays.copyOfRange(datagramData, index, index += IP_LENGTH));
@@ -65,7 +65,7 @@ public class Packet {
 			throw new MalformedPacketException("Malformed 'dest'");
 		}
 		try { 
-			TTL = (short)(0xFF&datagramData[8]);
+			TTL = (short)(0xFF&datagramData[index]);
 		} catch (ArrayIndexOutOfBoundsException e) {
 			throw new MalformedPacketException("Malformed 'TTL'");
 		}

@@ -53,6 +53,7 @@ public class Main implements Observer {
 	public static InetAddress IP;
 	
 	private ArrayList<NodeInfo> knownNodes = new ArrayList<NodeInfo>();
+	private boolean tcpBufferFull = false;
 	
 	public Main() {
 		// start LoginGUI
@@ -96,6 +97,11 @@ public class Main implements Observer {
 	 * @return whether successful or not
 	 */
 	public boolean sendMessage(String message) {
+		if (tcpBufferFull) {
+			chatUI.addPopup("Buffer still full", "Message buffer still full, " +
+					"wait for notification to continue", true);
+			return true;
+		}
 		// set packetType byte
 		PacketType type;
 		if (multiChat) {
@@ -104,13 +110,15 @@ public class Main implements Observer {
 			type = PacketType.CHAT_PRIV;
 		}
 		// create and encrypt packet
-		String chatPacket = type.toByte() + name + "\"" +  message;
-		byte[] cipherText = encrypt(chatPacket);
+		byte[] cipherText = encrypt(name + "\"" +  message);
+		byte[] fullMessage = new byte[cipherText.length + 1];
+		fullMessage[0] = type.toByte();
+		System.arraycopy(cipherText, 0, fullMessage, 1, cipherText.length);
 		boolean succes = false;
 		if (multiChat) {
-			succes = router.sendPacket(Packet.generatePacket(cipherText));
+			succes = router.sendPacket(Packet.generatePacket(fullMessage));
 		} else {
-			//TODO TCP
+			tcp.sendData(cipherText);
 		}
 		if (succes) {
 			mainUI.addMessage(name, message);
@@ -142,20 +150,29 @@ public class Main implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		if (o.equals(tcp) && arg instanceof String) {
-			byte[] message = ((String)arg).getBytes();
-			// extract packet type
-			PacketType packetType = PacketType.getType(message[0]);
-			// extract actual data (sender name + message)
-			byte[] cipherText = new byte[message.length - 1];
-			String msg = "";
-			if ((packetType.equals(PacketType.CHAT_PUBL) && multiChat) || 
-					packetType.equals(PacketType.CHAT_PRIV) && !multiChat) {
-				msg = PrintUtil.genHeader("Application", "got message", true, 0);
+		if (o.equals(tcp) && arg instanceof String) { //wait,shutdown, connection_lost,continue
+			String mesg = (String)arg;
+			if (mesg.equals("WAIT")) {
+				tcpBufferFull = true;
+				chatUI.addPopup("Buffer full", "Message buffer full, " +
+						"wait for notification to continue", true);		
+			} else if (mesg.equals("CONNECTION_LOST")) {
+				tcpBufferFull = false;
+				chatUI.addPopup("Connection lost", "TCP connection lost, " +
+						"you will be redirected to the public chat.", true);
+				toPublic();
+			} else if (mesg.equals("CONTINUE")) {
+				tcpBufferFull = false;
+				chatUI.addPopup("Continue sending", "You can continue sending.", false);	
+			} else if (mesg.equals("SHUTDOWN")) {
+				shutDown(false);
+			} else {
+				byte[] message = mesg.getBytes();
+				String msg = PrintUtil.genHeader("Application", "got message", true, 0);
 				msg += PrintUtil.genDataLine("Action: ", 0, false);
 				String plaintext = null;
 				try {
-					plaintext = decrypt(cipherText);
+					plaintext = decrypt(message);
 					String[] parts = plaintext.split("\"");
 					mainUI.addMessage(parts[0], parts[1]);
 					msg += PrintUtil.genDataLine("READ", 0);
@@ -163,9 +180,6 @@ public class Main implements Observer {
 					// drop packet
 					msg += PrintUtil.genDataLine("DROP - encryption", 0);
 				}
-			} else {
-				//drop
-				return;
 			}
 		} else if (o.equals(router) && arg instanceof String) {
 			String message = (String)arg;
@@ -177,9 +191,13 @@ public class Main implements Observer {
 			byte[] data = ((Packet)arg).getPacketData();
 			// extract packet type
 			PacketType packetType = PacketType.getType(data[0]);
+			if (packetType == null) {
+				//drop
+				return;
+			}
 			// extract actual data (sender name + message)
 			byte[] cipherText = new byte[data.length - 1];
-			System.arraycopy(data, 1, cipherText, 0, data.length);
+			System.arraycopy(data, 1, cipherText, 0, data.length - 1);
 			String msg = "";
 			if ((packetType.equals(PacketType.CHAT_PUBL) && multiChat) || 
 					packetType.equals(PacketType.CHAT_PRIV) && !multiChat) {
@@ -189,6 +207,9 @@ public class Main implements Observer {
 				try {
 					plaintext = decrypt(cipherText);
 					String[] parts = plaintext.split("\"");
+					if (parts.length < 2) {
+						throw new MalformedCipherTextException();
+					}
 					mainUI.addMessage(parts[0], parts[1]);
 					msg += PrintUtil.genDataLine("READ", 0);
 				} catch (MalformedCipherTextException e) {
@@ -207,10 +228,12 @@ public class Main implements Observer {
 				// already known so remove it
 				knownNodes.remove(aNode);
 				mainUI.deleteUser(aNode.getNodeName());
+				mainUI.addPopup("", aNode.getNodeName() + " left", false);
 			} else {
 				// not known so add it
 				knownNodes.add(aNode);
 				mainUI.addUser(aNode.getNodeName());
+				mainUI.addPopup("", aNode.getNodeName() + " entered", false);
 			}
 			
 		}
@@ -241,6 +264,7 @@ public class Main implements Observer {
 		router.start();	
 		// start routing protocol
 		routing = new RoutingProtocol(this, router);
+		routing.addObserver(this);
 		routing.start();
 		return true;
 	}

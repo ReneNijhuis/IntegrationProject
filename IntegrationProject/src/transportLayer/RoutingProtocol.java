@@ -66,6 +66,7 @@ public class RoutingProtocol extends Observable implements Observer {
 				for (NodeInfo node : connectedNodes) {
 					if (node.isTimedOut(TIME_OUT)) {
 						toBeDeleted.add(node);
+						notifyObservers(node);
 					}
 				}
 				synchronized (connectedNodes) {
@@ -144,9 +145,11 @@ public class RoutingProtocol extends Observable implements Observer {
 							// drop
 							return;
 						}
+						NodeInfo newbe = new NodeInfo(name, src);
 						synchronized (connectedNodes) {
-							connectedNodes.add(new NodeInfo(name, src));
+							connectedNodes.add(newbe);
 						}
+						notifyObservers(newbe);
 					} else {
 						// known neighbor, update last heartbeat time
 						sender.updateHeartBeat();
@@ -177,6 +180,9 @@ public class RoutingProtocol extends Observable implements Observer {
 					synchronized (connectedNodes) {
 						connectedNodes.addAll(newNodes);
 					}
+					for (NodeInfo node : newNodes) {
+						notifyObservers(node);
+					}
 					// possibly update existing nodes (shorter routes)
 					for (NodeInfo node : possibleUpdateNodes) {
 						NodeInfo currNodeInfo = getNodeByIp(node.getNodeIp());
@@ -203,6 +209,7 @@ public class RoutingProtocol extends Observable implements Observer {
 						// drop
 						return;
 					}
+					notifyObservers(tbd);
 					synchronized (connectedNodes) {
 						connectedNodes.remove(tbd);
 					}		

@@ -112,9 +112,9 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (!packet.correctHash()) {
 			// drop packet
 			message += PrintUtil.START + "DROP - hash(checksum)\n";	
-		//} else if (packet.getSource().equals(ownAddress)) {
+		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
-			//message += PrintUtil.START + "DROP - src\n";
+			message += PrintUtil.START + "DROP - src\n";
 		} else if (!currDest.equals(bcAddr)) {
 			// drop packet
 			message += PrintUtil.START + " DROP - curr dest\n";

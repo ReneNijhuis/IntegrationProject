@@ -379,20 +379,17 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		if ((c = e.getKeyChar()) != KeyEvent.CHAR_UNDEFINED) {
 			if (e.getSource().equals(textfield1)) {
 				if (textfield1.getText().length() > MAX_LENGTH) {
-					addPopup("Username too long", "Max message length is " + MAX_LENGTH, false);
+					addPopup("Message too long", "Max message length is " + MAX_LENGTH, false);
 					textfield1.setText(textfield1.getText().substring(0, MAX_LENGTH));
-				}
-				else {
-					if (c == '\n') {
-						sendMessage(textfield1.getText());
-					} else {	
-						if (isLetterOrNumber(c)) {
-							sendEnabled = true;
-						} else if (containsLetterOrNumber(textfield1.getText())) {
-							sendEnabled = true;
-						} else {
-							sendEnabled = false;
-						}
+				} else if (c == '\n') {
+					sendMessage(textfield1.getText());
+				} else {	
+					if (isLetterOrNumber(c)) {
+						sendEnabled = true;
+					} else if (containsLetterOrNumber(textfield1.getText())) {
+						sendEnabled = true;
+					} else {
+						sendEnabled = false;
 					}
 				}
 			}

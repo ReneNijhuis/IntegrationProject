@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -12,6 +14,7 @@ import tools.PrintUtil;
 import transportLayer.ChatPacket;
 import transportLayer.GetIp;
 import transportLayer.MalformedPacketException;
+import transportLayer.NodeInfo;
 import transportLayer.Packet;
 import transportLayer.PacketRouter;
 import transportLayer.PacketTracker;
@@ -49,6 +52,8 @@ public class Main implements Observer {
 	
 	public static InetAddress IP;
 	
+	private ArrayList<NodeInfo> knownNodes = new ArrayList<NodeInfo>();
+	
 	public Main() {
 		// start LoginGUI
 		loginUI = new LoginGUI(this);
@@ -65,7 +70,6 @@ public class Main implements Observer {
 		privIv = createHash(privPass);
 		privEncryptor = new Encryption(privPass, privIv);
 		chatUI.setCompagionName(compagionName);
-		// TODO TCP implementation (setup + start)
 		router.deleteObserver(this);
 		tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp());
 		tcp.addObserver(this);
@@ -116,29 +120,59 @@ public class Main implements Observer {
 		return succes;
 	}
 	
-	public static void main(String[] args) {
-		@SuppressWarnings("unused")
-		Main main = new Main();
+	private byte[] encrypt(String chatPacket) {
+		byte[] cipherText;
+		if (multiChat) {
+			cipherText = publEncryptor.encrypt(chatPacket.getBytes());
+		} else {
+			cipherText = privEncryptor.encrypt(chatPacket.getBytes());
+		}
+		return cipherText;
+	}
+	
+	private String decrypt(byte[] cipherText) throws MalformedCipherTextException {
+		String plainText;
+		if (multiChat) {
+			plainText = publEncryptor.decrypt(cipherText);
+		} else {
+			plainText = publEncryptor.decrypt(cipherText);
+		}
+		return plainText;
 	}
 
 	@Override
 	public void update(Observable o, Object arg) {
-		/*if (o.equals(tcp) && arg instanceof String) {
-			String message = (String)arg;
-			if (message.equals("SHUTDOWN")) {
-				shutDown(false);
+		if (o.equals(tcp) && arg instanceof String) {
+			byte[] message = ((String)arg).getBytes();
+			// extract packet type
+			PacketType packetType = PacketType.getType(message[0]);
+			// extract actual data (sender name + message)
+			byte[] cipherText = new byte[message.length - 1];
+			String msg = "";
+			if ((packetType.equals(PacketType.CHAT_PUBL) && multiChat) || 
+					packetType.equals(PacketType.CHAT_PRIV) && !multiChat) {
+				msg = PrintUtil.genHeader("Application", "got message", true, 0);
+				msg += PrintUtil.genDataLine("Action: ", 0, false);
+				String plaintext = null;
+				try {
+					plaintext = decrypt(cipherText);
+					String[] parts = plaintext.split("\"");
+					mainUI.addMessage(parts[0], parts[1]);
+					msg += PrintUtil.genDataLine("READ", 0);
+				} catch (MalformedCipherTextException e) {
+					// drop packet
+					msg += PrintUtil.genDataLine("DROP - encryption", 0);
+				}
 			} else {
-				ChatMessage fullMessage = new ChatMessage(encryptor.decrypt(message.getBytes()));
-				mainUI.addMessage(fullMessage);
+				//drop
+				return;
 			}
-		}*/
-		if (o.equals(router) && arg instanceof String) {
+		} else if (o.equals(router) && arg instanceof String) {
 			String message = (String)arg;
 			if (message.equals("SHUTDOWN")) {
 				shutDown(false);
 			} 
-		}
-		else if (o.equals(router) && arg instanceof Packet) {
+		} else if (o.equals(router) && arg instanceof Packet) {
 			// get all data from packet
 			byte[] data = ((Packet)arg).getPacketData();
 			// extract packet type
@@ -167,6 +201,18 @@ public class Main implements Observer {
 			}
 			msg += PrintUtil.genHeader("Application", "got message", false, 0);
 			PrintUtil.printTextln(msg);
+		} else if (o.equals(routing) && arg instanceof NodeInfo) {
+			NodeInfo aNode = (NodeInfo)arg;
+			if (knownNodes.contains(aNode)) {
+				// already known so remove it
+				knownNodes.remove(aNode);
+				mainUI.deleteUser(aNode.getNodeName());
+			} else {
+				// not known so add it
+				knownNodes.add(aNode);
+				mainUI.addUser(aNode.getNodeName());
+			}
+			
 		}
 	}
 	
@@ -199,26 +245,6 @@ public class Main implements Observer {
 		return true;
 	}
 	
-	private byte[] encrypt(String chatPacket) {
-		byte[] cipherText;
-		if (multiChat) {
-			cipherText = publEncryptor.encrypt(chatPacket.getBytes());
-		} else {
-			cipherText = privEncryptor.encrypt(chatPacket.getBytes());
-		}
-		return cipherText;
-	}
-	
-	private String decrypt(byte[] cipherText) throws MalformedCipherTextException {
-		String plainText;
-		if (multiChat) {
-			plainText = publEncryptor.decrypt(cipherText);
-		} else {
-			plainText = publEncryptor.decrypt(cipherText);
-		}
-		return plainText;
-	}
-	
 	/**
 	 * Really login
 	 */
@@ -248,6 +274,12 @@ public class Main implements Observer {
 			// will probably never happen
 		}
 		return hash;
+	}
+	
+	
+	public static void main(String[] args) {
+		@SuppressWarnings("unused")
+		Main main = new Main();
 	}
 
 	/**

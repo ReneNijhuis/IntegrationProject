@@ -61,6 +61,8 @@ public class Main implements Observer {
 	
 	public void toPrivate(String compagionName, byte[] key) {
 		multiChat = false;
+		privPass = createHash(key);
+		privIv = createHash(privPass);
 		privEncryptor = new Encryption(privPass, privIv);
 		switchUI();
 	}

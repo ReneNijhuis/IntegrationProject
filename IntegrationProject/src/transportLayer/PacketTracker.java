@@ -80,6 +80,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	@Override
 	public void update(Observable o, Object obj) {
 		if (o == router && obj instanceof String && ((String) obj).equals("SHUTDOWN")) {
+			notifyObservers("SHUTDOWN");
 			shutDown(false, false);
 		}
 		if (o == router && obj instanceof Packet) {
@@ -172,13 +173,9 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				endConnection(true, null);
 			} else {
 				router.deleteObserver(this);
-				router.shutDown(selfDestruct, appInit);
 				connectionAlive = false;
 				tickThread.end();
 			}
-		}
-		if (selfDestruct || !appInit) {
-			notifyObservers("SHUTDOWN");
 		}
 	}
 

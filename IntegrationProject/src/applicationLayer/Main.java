@@ -32,6 +32,7 @@ public class Main implements Observer {
 	private PacketRouter router;
 	private PacketTracker tcp;
 	private RoutingProtocol routing;
+	private InternetProtocol client;
 	
 	private boolean multiChat = true;
 	
@@ -116,13 +117,24 @@ public class Main implements Observer {
 		boolean succes = false;
 		if (multiChat) {
 			succes = router.sendPacket(Packet.generatePacket(fullMessage, routing.getMaxHops()));
+			if (succes) {
+				mainUI.addMessage(name, message);
+			} else {
+				mainUI.addPopup("Delivery failure", "Could not send message, trying to restart client", true);
+				client.shutdown();
+				client.start();	
+				router.start();
+				if (router.sendPacket(Packet.generatePacket(fullMessage, routing.getMaxHops()))) {
+					mainUI.addPopup("Succesfully reconnected", "Succesfully reconnected to network", false);
+				}
+			}
 		} else {
-			tcp.sendData(cipherText);
-		}
-		if (succes) {
-			mainUI.addMessage(name, message);
-		} else {
-			mainUI.addPopup("Delivery failure", "Could not send message", true);
+			succes = tcp.sendData(cipherText);
+			if (succes) {
+				chatUI.addMessage(name, message);
+			} else {
+				chatUI.addPopup("Delivery failure", "Could not send message, trying to restart client", true);
+			}
 		}
 		return succes;
 	}
@@ -256,7 +268,7 @@ public class Main implements Observer {
 		// create public encryptor
 		publEncryptor = new Encryption(this.pass, iv);
 		// start Ad-Hoc-client
-		InternetProtocol client = new InternetProtocol();
+		client = new InternetProtocol();
 		client.start();
 		// get local ip
 		GetIp getIp = new GetIp(client);

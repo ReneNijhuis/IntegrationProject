@@ -354,7 +354,7 @@ public class RoutingProtocol extends Observable implements Observer {
 	}
 
 	public short getMaxHops() {
-		short max = 0;
+		short max = 1;
 		for (NodeInfo node : connectedNodes) {
 			short distance = node.getHopDistance();
 			if (max < distance) {

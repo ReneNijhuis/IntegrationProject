@@ -46,6 +46,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private final Main main;
 
 	private boolean sendEnabled = false;
+	private boolean sending = false;
 
 	private JTextField textfield1 = new JTextField();
 	private JTextArea textarea1 = new JTextArea();
@@ -366,18 +367,31 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			}
 		}
 	}
-
-	private void sendMessage(String message) {
-		if (sendEnabled 
-				&& !message.equals("Input text here:") 
-				&& main.sendMessage(message)
-				) {
-			textfield1.setText("");
-			sendEnabled = false;
-			updateSendButton();
-		}
+	private void sendMessage(final String message) {
+		Thread t = new Thread(new Runnable() {	
+			@Override
+			public void run() {
+				if (!sending && sendEnabled 
+						&& !message.equals("Input text here:") 
+						&& main.sendMessage(message)
+						) {
+					textfield1.setText("");
+					sendEnabled = false;
+					sending = true;
+					updateSendButton();
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {}
+					sending = false;
+					if (containsLetterOrNumber(textfield1.getText())) {
+						sendEnabled = true;
+					}
+				}
+				
+			}
+		});
+		t.start();
 	}
-
 
 	@Override
 	public void keyTyped(KeyEvent e) {
@@ -387,15 +401,18 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 				if (textfield1.getText().length() > MAX_LENGTH) {
 					addPopup("Message too long", "Max message length is " + MAX_LENGTH, false);
 					textfield1.setText(textfield1.getText().substring(0, MAX_LENGTH));
-				} else if (c == '\n') {
-					sendMessage(textfield1.getText());
-				} else {	
-					if (isLetterOrNumber(c)) {
-						sendEnabled = true;
-					} else if (containsLetterOrNumber(textfield1.getText())) {
-						sendEnabled = true;
-					} else {
-						sendEnabled = false;
+				}
+				else {
+					if (c == '\n') {
+						sendMessage(textfield1.getText());
+					} else if (!sending) {	
+						if (isLetterOrNumber(c)) {
+							sendEnabled = true;
+						} else if (containsLetterOrNumber(textfield1.getText())) {
+							sendEnabled = true;
+						} else {
+							sendEnabled = false;
+						}
 					}
 				}
 			}
@@ -408,12 +425,13 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	public void keyReleased(KeyEvent e) {}
 
 	private void updateSendButton() {
-		if (sendEnabled && !button1.isEnabled()) {
+		if (!sending && sendEnabled && !button1.isEnabled()) {
 			button1.setEnabled(true);
-		} else if (!sendEnabled && button1.isEnabled()) {
+		} else if ((sending || !sendEnabled) && button1.isEnabled()) {
 			button1.setEnabled(false);
 		}
 	}
+
 
 	private boolean containsLetterOrNumber(String s) {
 		for (char c : s.toCharArray()) {

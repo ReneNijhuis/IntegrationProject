@@ -70,6 +70,7 @@ public class Main implements Observer {
 		tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp());
 		tcp.addObserver(this);
 		tcp.start();
+		tcp.setupConnection(true);
 		switchUI();	
 	}
 	

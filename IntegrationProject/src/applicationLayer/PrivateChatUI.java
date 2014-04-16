@@ -44,6 +44,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	private final Main main;
 
 	private boolean sendEnabled = false;
+	private boolean sending = false;
 
 	private JTextField textfield1 = new JTextField();
 	private JTextArea textarea1 = new JTextArea();
@@ -241,15 +242,30 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		}
 	}
 
-	private void sendMessage(String message) {
-		if (sendEnabled 
-				&& !message.equals("Input text here:") 
-				&& main.sendMessage(message)
-				) {
-			textfield1.setText("");
-			sendEnabled = false;
-			updateSendButton();
-		}
+	private void sendMessage(final String message) {
+		Thread t = new Thread(new Runnable() {	
+			@Override
+			public void run() {
+				if (!sending && sendEnabled 
+						&& !message.equals("Input text here:") 
+						&& main.sendMessage(message)
+						) {
+					textfield1.setText("");
+					sendEnabled = false;
+					sending = true;
+					updateSendButton();
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {}
+					sending = false;
+					if (containsLetterOrNumber(textfield1.getText())) {
+						sendEnabled = true;
+					}
+				}
+				
+			}
+		});
+		t.start();
 	}
 
 	@Override
@@ -264,7 +280,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 				else {
 					if (c == '\n') {
 						sendMessage(textfield1.getText());
-					} else {	
+					} else if (!sending) {	
 						if (isLetterOrNumber(c)) {
 							sendEnabled = true;
 						} else if (containsLetterOrNumber(textfield1.getText())) {
@@ -284,9 +300,9 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	public void keyReleased(KeyEvent e) {}
 
 	private void updateSendButton() {
-		if (sendEnabled && !button1.isEnabled()) {
+		if (!sending && sendEnabled && !button1.isEnabled()) {
 			button1.setEnabled(true);
-		} else if (!sendEnabled && button1.isEnabled()) {
+		} else if ((sending || !sendEnabled) && button1.isEnabled()) {
 			button1.setEnabled(false);
 		}
 	}

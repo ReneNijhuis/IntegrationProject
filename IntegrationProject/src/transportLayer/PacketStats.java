@@ -49,5 +49,4 @@ public class PacketStats {
 		}
 		return result; 
 	}
-	
 }

@@ -80,7 +80,7 @@ public class TestingTool {
 						new TrackerTest(input).runTest();
 						break;
 					default:
-						output("what? int, text or short?");
+						output("what? int, text, short or tracker?");
 						break;
 				}
 				break;

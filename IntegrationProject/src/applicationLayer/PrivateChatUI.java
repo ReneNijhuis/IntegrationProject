@@ -338,7 +338,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		toparea.setForeground(new Color(34,220,214));
 		toparea.setEditable(false);
 		toparea.setText("You are now chatting with:");
-		
+		layout = new GroupLayout(buttonpanel);
 		buttonpanel.add(textarea2);
 		JScrollPane js = new JScrollPane(buttonpanel);
 		buttonpanel.setLayout(layout);

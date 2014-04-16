@@ -183,6 +183,8 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		con1.fill = GridBagConstraints.BOTH;
 		con1.gridx = 0;
 		con1.gridy = 1;
+		con1.weightx = 1.0;
+		con1.weighty = 1.0;
 		con1.ipady = (int) (windowHeight / 1.8);
 		con1.ipadx = (int) (windowWidth / 5);
 
@@ -215,7 +217,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 
 		con5.fill = GridBagConstraints.BOTH;
 		con5.weightx = 1.0;
-		con5.weighty = 1.0;
+		//con5.weighty = 1.0;
 		con5.gridx = 0;
 		con5.gridy = 0;
 		con5.ipady = (int) (windowHeight / 17);

@@ -57,13 +57,12 @@ public class TrackerTest implements Observer {
 			case "send":
 				Boolean drop = input.next().toLowerCase().startsWith("y");
 				String message = input.next();
-				sendMessage(drop, message);
+				sendMessage(true, drop, message);
 				break;
 			case "sen+":
-				String message2 = input.next();
-				while (!message2.equalsIgnoreCase("end")) {
-					sendMessage(false, message2);
-					message2 = input.next();
+				while (input.hasNext()) {
+					String message2 = input.next();
+					sendMessage(false, false, message2);
 				}
 			case "disc":
 				disconnect();
@@ -95,8 +94,11 @@ public class TrackerTest implements Observer {
 		}
 	}
 
-	private void sendMessage(Boolean drop, String message) {
-		int sender = 1 + rand.nextInt(2);
+	private void sendMessage(Boolean randomSender, Boolean drop, String message) {
+		int sender = 1;
+		if (randomSender) {
+			sender += rand.nextInt(2);
+		}
 		if (sender == 1) {
 			if (drop) route2.dropNext();
 			track1.sendData(message.getBytes());
@@ -124,9 +126,9 @@ public class TrackerTest implements Observer {
 	@Override
 	public void update(Observable o, Object arg) {		
 		if (arg instanceof byte[]) {
-			output("Message from " + o + ": " + TestingTool.textArrayToString((byte[])arg));
+			System.err.println("Message from " + o + ": " + TestingTool.textArrayToString((byte[])arg));
 		} else {
-			output("Message from " + o.toString() + ": " + arg.toString());
+			System.err.println("Message from " + o.toString() + ": " + arg.toString());
 		}
 	}
 

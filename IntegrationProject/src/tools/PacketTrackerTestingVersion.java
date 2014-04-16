@@ -141,7 +141,7 @@ public class PacketTrackerTestingVersion extends Observable implements NetworkLa
 				for (int i = 0; i < incommingBuffer.size(); i++) {
 					TraceablePacket packet = getSmallest(incommingBuffer);
 					if (packet.getTrackNr() == expectedNr) {
-						notifyObservers(packet);
+						notifyObservers(packet.getData());
 						incommingBuffer.remove(packet);
 						expectedNr = increaseValue(expectedNr);
 					} else {
@@ -225,6 +225,7 @@ public class PacketTrackerTestingVersion extends Observable implements NetworkLa
 					router.sendPacket(sendablePacket);
 				} else {
 					notifyObservers("CONNECTION_LOST");
+					shutDown(true, false);
 				}
 			}
 		}

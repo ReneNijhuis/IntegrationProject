@@ -3,6 +3,7 @@ package tools;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Observable;
+import java.util.Random;
 
 import transportLayer.Packet;
 
@@ -19,6 +20,11 @@ public class TrackerTestingRouter extends Observable {
 	
 	public boolean sendPacket(Packet sendablePacket) {
 		sendablePacket.setSource(address);
+		try {
+			Thread.sleep(2);
+		} catch (InterruptedException e) {
+			//do Nothing
+		}
 		ally.receivePacket(sendablePacket);
 		TestingTool.output("Router at " + address + " gave packet to " + ally.getAddress());
 		return true;
@@ -29,7 +35,8 @@ public class TrackerTestingRouter extends Observable {
 			notifyObservers(sendablePacket);
 			TestingTool.output("Router at " + address + " received packet");
 		}
-		dropNextPacket = false;
+		int drop = new Random().nextInt(10);
+		dropNextPacket = drop == 0;
 	}
 
 	public void shutDown(boolean selfDestruct, boolean appInit) {

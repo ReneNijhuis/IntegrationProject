@@ -219,6 +219,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 					router.sendPacket(sendablePacket);
 				} else {
 					notifyObservers("CONNECTION_LOST");
+					shutDown(true, false);
 				}
 			}
 		}

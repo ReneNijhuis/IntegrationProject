@@ -108,7 +108,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	}
 	
 	public void clear(){
-		textfield1.setText("");
+		textarea1.setText("");
 	}
 
 	public JPanel changeUI(){

@@ -66,19 +66,19 @@ public class Main implements Observer {
 		privIv = createHash(privPass);
 		privEncryptor = new Encryption(privPass, privIv);
 		chatUI.setCompagionName(compagionName);
-		//router.deleteObserver(this);
-		//tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp());
-		//tcp.addObserver(this);
-		//tcp.start();
-		//tcp.setupConnection(true);
+		//router.deleteObserver(this); //TODO
+		//tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp()); //TODO
+		//tcp.addObserver(this); //TODO
+		//tcp.start(); //TODO
+		//tcp.setupConnection(true); //TODO
 		switchUI();	
 	}
 	
 	public void toPublic() {
 		multiChat = true;
-		//tcp.deleteObserver(this);
-		//tcp.shutDown(false, true);
-		//router.addObserver(this);
+		//tcp.deleteObserver(this); //TODO
+		//tcp.shutDown(false, true); //TODO
+		//router.addObserver(this); //TODO
 		switchUI();
 	}
 	
@@ -108,8 +108,8 @@ public class Main implements Observer {
 		if (multiChat) {
 			type = PacketType.CHAT_PUBL;
 		} else {
-			//type = PacketType.CHAT_PRIV;
-			type = PacketType.CHAT_PUBL;
+			type = PacketType.CHAT_PRIV;
+			//type = PacketType.CHAT_PUBL;
 		}
 		// create and encrypt packet
 		byte[] cipherText = encrypt(name + "\"" +  message);
@@ -170,7 +170,7 @@ public class Main implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		/*if (o.equals(tcp) && arg instanceof String) { //wait,shutdown, connection_lost,continue
+		/*if (o.equals(tcp) && arg instanceof String) { //wait,shutdown, connection_lost,continue //TODO
 			String mesg = (String)arg;
 			if (mesg.equals("WAIT")) {
 				tcpBufferFull = true;
@@ -223,8 +223,8 @@ public class Main implements Observer {
 			byte[] cipherText = new byte[data.length - 1];
 			System.arraycopy(data, 1, cipherText, 0, data.length - 1);
 			String msg = "";
-			if ((packetType.equals(PacketType.CHAT_PUBL) /*&& multiChat*/) || 
-					packetType.equals(PacketType.CHAT_PRIV) /*&& !multiChat*/) {
+			if ((packetType.equals(PacketType.CHAT_PUBL) && multiChat) ||
+					packetType.equals(PacketType.CHAT_PRIV) && !multiChat) {
 				msg = PrintUtil.genHeader("Application", "got message", true, 0);
 				msg += PrintUtil.genDataLine("Action: ", 0, false);
 				String plaintext = null;

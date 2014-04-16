@@ -2,6 +2,7 @@ package applicationLayer;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Observable;
@@ -57,7 +58,10 @@ public class Main implements Observer {
 		mainUI = new MainUI(this);	
 		// create private UI (don't show it yet)
 		chatUI = new PrivateChatUI(this);
-		// done here, wait for login to complete		
+		// done here, wait for login to complete	
+		try {
+			IP = InetAddress.getLocalHost();
+		} catch (UnknownHostException e) {}
 	}
 	
 	public void toPrivate(String compagionName, byte[] key) {
@@ -280,7 +284,7 @@ public class Main implements Observer {
 		// generate iv (hash of hash of password
 		iv = createHash(this.pass);
 		// create public encryptor
-		publEncryptor = new Encryption(this.pass, iv);
+		publEncryptor = new Encryption(this.pass, iv);		
 		// start Ad-Hoc-client
 		client = new InternetProtocol();
 		client.start();

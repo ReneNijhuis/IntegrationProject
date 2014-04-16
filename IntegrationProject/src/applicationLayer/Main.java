@@ -2,25 +2,19 @@ package applicationLayer;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Observable;
 import java.util.Observer;
 
 import tools.PrintUtil;
-import transportLayer.ChatPacket;
 import transportLayer.GetIp;
-import transportLayer.MalformedPacketException;
 import transportLayer.NodeInfo;
 import transportLayer.Packet;
 import transportLayer.PacketRouter;
 import transportLayer.PacketTracker;
 import transportLayer.PacketType;
 import transportLayer.RoutingProtocol;
-import transportLayer.UnknownPacketTypeException;
 import connectionLayer.InternetProtocol;
 import encryptionLayer.Encryption;
 import encryptionLayer.MalformedCipherTextException;
@@ -187,6 +181,8 @@ public class Main implements Observer {
 					// drop packet
 					msg += PrintUtil.genDataLine("DROP - encryption", 0);
 				}
+				msg += PrintUtil.genHeader("Application", "got message", false, 0);
+				PrintUtil.printTextln(msg);
 			}
 		} else if (o.equals(router) && arg instanceof String) {
 			String message = (String)arg;
@@ -235,12 +231,12 @@ public class Main implements Observer {
 				// already known so remove it
 				knownNodes.remove(aNode);
 				mainUI.deleteUser(aNode.getNodeName());
-				mainUI.addPopup("", aNode.getNodeName() + " left", false);
+				//mainUI.addPopup("", aNode.getNodeName() + " left", false);
 			} else {
 				// not known so add it
 				knownNodes.add(aNode);
 				mainUI.addUser(aNode.getNodeName());
-				mainUI.addPopup("", aNode.getNodeName() + " entered", false);
+				//mainUI.addPopup("", aNode.getNodeName() + " entered", false);
 			}
 			
 		}

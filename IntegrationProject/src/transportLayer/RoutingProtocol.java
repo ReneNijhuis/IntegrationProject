@@ -21,8 +21,8 @@ import connectionLayer.InternetProtocol;
  */
 public class RoutingProtocol extends Observable implements Observer {
 
-	public static final int HEARTBEAT_INTERVAL = 500; //ms
-	private static final int TIME_OUT = 3 * HEARTBEAT_INTERVAL;
+	public static final int HEARTBEAT_INTERVAL = 2000; //ms
+	private static final int TIME_OUT = 2 * HEARTBEAT_INTERVAL;
 	
 	private PacketType packetType = PacketType.ROUTING;
 		

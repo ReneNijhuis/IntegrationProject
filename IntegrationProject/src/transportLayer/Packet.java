@@ -376,8 +376,8 @@ public class Packet {
 		
 		// convert variables into byte (arrays)
 		byte[] srcBytes = source.getAddress();
-		byte[] destBytes = destination.getAddress();
 		byte[] currentDestBytes = currentDestination.getAddress();
+		byte[] destBytes = destination.getAddress();	
 		byte[] ttlByte = addSignAndHash ? new byte[]{(byte)TTL} : new byte[1];
 		byte[] hashBytes = addSignAndHash ? hash : new byte[32];
 		byte[] signBytes = addSignAndHash ? signature : new byte[32];
@@ -386,10 +386,10 @@ public class Packet {
 		int index = 0;
 		System.arraycopy(srcBytes, 0, array, 0, srcBytes.length);
 		index += srcBytes.length;
-		System.arraycopy(destBytes, 0, array, index, destBytes.length);
-		index += destBytes.length;
 		System.arraycopy(currentDestBytes, 0, array, index, currentDestBytes.length);
 		index += currentDestBytes.length;
+		System.arraycopy(destBytes, 0, array, index, destBytes.length);
+		index += destBytes.length;
 		System.arraycopy(ttlByte, 0, array, index, 1);
 		index += ttlByte.length;
 		System.arraycopy(signBytes, 0, array, index, signBytes.length);

@@ -79,7 +79,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		if (o == router && obj instanceof Packet) {
 			Packet packetToHandle = null;
 			packetToHandle = (Packet) obj;
-			if (packetToHandle.getSource() == connectionAddress) {
+			if (packetToHandle.getSource().equals(connectionAddress)) {
 				if (!handleReceivedPacket(packetToHandle)) {
 					shutDown(true, false);
 				}

@@ -35,8 +35,9 @@ public class TrackerTestingRouter extends Observable {
 			notifyObservers(sendablePacket);
 			TestingTool.output("Router at " + address + " received packet");
 		}
-		int drop = new Random().nextInt(10);
-		dropNextPacket = drop == 0;
+		dropNextPacket = false;
+//		int drop = new Random().nextInt(10);
+//		dropNextPacket = drop == 0;
 	}
 
 	public void shutDown(boolean selfDestruct, boolean appInit) {

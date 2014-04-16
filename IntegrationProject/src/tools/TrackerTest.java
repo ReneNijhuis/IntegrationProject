@@ -60,9 +60,11 @@ public class TrackerTest implements Observer {
 				sendMessage(true, drop, message);
 				break;
 			case "sen+":
+				boolean first = true;
 				while (input.hasNext()) {
 					String message2 = input.next();
-					sendMessage(false, false, message2);
+					sendMessage(false, first, message2);
+					first = false;
 				}
 			case "disc":
 				disconnect();

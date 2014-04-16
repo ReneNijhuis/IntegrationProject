@@ -163,7 +163,7 @@ public class Main implements Observer {
 		if (multiChat) {
 			plainText = publEncryptor.decrypt(cipherText);
 		} else {
-			plainText = publEncryptor.decrypt(cipherText);
+			plainText = privEncryptor.decrypt(cipherText);
 		}
 		return plainText;
 	}
@@ -223,8 +223,8 @@ public class Main implements Observer {
 			byte[] cipherText = new byte[data.length - 1];
 			System.arraycopy(data, 1, cipherText, 0, data.length - 1);
 			String msg = "";
-			if ((packetType.equals(PacketType.CHAT_PUBL) && multiChat) || 
-					packetType.equals(PacketType.CHAT_PRIV) && !multiChat) {
+			if ((packetType.equals(PacketType.CHAT_PUBL) /*&& multiChat*/) || 
+					packetType.equals(PacketType.CHAT_PRIV) /*&& !multiChat*/) {
 				msg = PrintUtil.genHeader("Application", "got message", true, 0);
 				msg += PrintUtil.genDataLine("Action: ", 0, false);
 				String plaintext = null;
@@ -234,7 +234,12 @@ public class Main implements Observer {
 					if (parts.length < 2) {
 						throw new MalformedCipherTextException();
 					}
-					mainUI.addMessage(parts[0], parts[1]);
+					if (multiChat) {
+						mainUI.addMessage(parts[0], parts[1]);
+					} else {
+						chatUI.addMessage(parts[0], parts[1]);
+					}
+					
 					msg += PrintUtil.genDataLine("READ", 0);
 				} catch (MalformedCipherTextException e) {
 					// drop packet

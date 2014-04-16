@@ -258,7 +258,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		if ((c = e.getKeyChar()) != KeyEvent.CHAR_UNDEFINED) {
 			if (e.getSource().equals(textfield1)) {
 				if (textfield1.getText().length() > MAX_LENGTH) {
-					addPopup("Username too long", "Max message length is " + MAX_LENGTH, false);
+					addPopup("Message too long", "Max message length is " + MAX_LENGTH, false);
 					textfield1.setText(textfield1.getText().substring(0, MAX_LENGTH));
 				}
 				else {

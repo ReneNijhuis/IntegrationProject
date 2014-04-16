@@ -89,6 +89,11 @@ public class Main implements Observer {
 	private void switchUI() {
 		chatUI.setVisible(!multiChat);
 		mainUI.setVisible(multiChat);
+		if (multiChat) {
+			chatUI.clear();
+		} else {
+			mainUI.clear();
+		}
 	}
 	
 	/**
@@ -158,7 +163,9 @@ public class Main implements Observer {
 						"wait for notification to continue", true);		
 			} else if (mesg.equals("CONNECTION_LOST")) {
 				tcpBufferFull = false;
+				int retryTime = PacketTracker.MAX_SENT_TIMES * PacketTracker.TIMEOUT / 1000;
 				chatUI.addPopup("Connection lost", "TCP connection lost, " +
+						"all messages send for " + retryTime + " seconds did not arrive" +
 						"you will be redirected to the public chat.", true);
 				toPublic();
 			} else if (mesg.equals("CONTINUE")) {

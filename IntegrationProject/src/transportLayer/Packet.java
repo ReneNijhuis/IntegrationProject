@@ -130,14 +130,10 @@ public class Packet {
 	}
 	
 	public Packet(InetAddress destination, byte[] data) {
-		try {
-			currentSource = InetAddress.getLocalHost();
-			source = InetAddress.getLocalHost();
-			currentDestination = getBroadcastAddress();
-			this.destination = destination;
-		} catch (UnknownHostException e) {
-			// will probably never happen
-		}
+		currentSource = Main.IP;
+		source = Main.IP;
+		currentDestination = getBroadcastAddress();
+		this.destination = destination;
 		this.port = InternetProtocol.MULTICAST_PORT;
 		this.TTL = defTTL;
 		this.data = data;
@@ -261,12 +257,7 @@ public class Packet {
 	 */
 	public static Packet generateForward(Packet packet, byte[] data) {
 		Packet answer = new Packet(packet);
-		try {
-			answer.setCurrentSource(InetAddress.getLocalHost());
-		} catch (UnknownHostException e) {
-			// will probably never happen
-			return null;
-		}
+		answer.setCurrentSource(Main.IP);
 		answer.setPort(InternetProtocol.MULTICAST_PORT);
 		answer.setPacketData(data);	
 		return answer;	
@@ -299,10 +290,9 @@ public class Packet {
 		InetAddress currentSource;
 		InetAddress source;
 		InetAddress destination;
-		try {
-			currentSource = Main.IP;
-			source = Main.IP;
-			destination = getBroadcastAddress();
+		currentSource = Main.IP;
+		source = Main.IP;
+		destination = getBroadcastAddress();
 		short TTL = ttl;
 		try {
 			return new Packet(currentSource, source, destination, TTL, data);

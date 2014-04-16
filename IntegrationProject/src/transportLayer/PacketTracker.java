@@ -45,9 +45,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		boolean couldSend = true;
 		TraceablePacket tp = new  TraceablePacket(trackNr, expectedNr, dataToSend);
 		if (!connectionAlive) {
-//			TestingTool.output("Initiating connection with " + connectionAddress);
-			couldSend = setupConnection(true);
-			outgoingBuffer.add(tp);
+				couldSend = false;
 		} else { 
 			Packet sendablePacket = new Packet(connectionAddress, tp.toByteArray());
 			

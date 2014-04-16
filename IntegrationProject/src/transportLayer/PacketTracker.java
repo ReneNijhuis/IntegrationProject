@@ -6,6 +6,7 @@ import java.util.Observable;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import tools.TestingTool;
 import transportLayer.ControlFlag;
 import transportLayer.NetworkLayer;
 import transportLayer.Packet;
@@ -51,14 +52,14 @@ public class PacketTracker extends Observable implements NetworkLayer {
 			
 			//if less than 5 packets are pending, send but not acknowledged, send it else buffer it 
 			if (packetsOut.size() < MAX_PENDING_PACKETS){
-//				TestingTool.output("Send packet to " + connectionAddress);
-//				TestingTool.output(tp.toString());
+				TestingTool.output("Send packet to " + connectionAddress);
+				TestingTool.output(tp.toString());
 				packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), tp));
 				trackNr = increaseValue(trackNr);
 				couldSend = router.sendPacket(sendablePacket);
 			} else {
-//				TestingTool.output("Buffered packet for " + connectionAddress);
-//				TestingTool.output(tp.toString());
+				TestingTool.output("Buffered packet for " + connectionAddress);
+				TestingTool.output(tp.toString());
 				outgoingBuffer.add(tp);
 				//if the buffer is filling up faster than packets are sent app has to slow down
 				if (outgoingBuffer.size() > MAX_PENDING_PACKETS * 2) {
@@ -79,7 +80,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		if (o == router && obj instanceof Packet) {
 			Packet packetToHandle = null;
 			packetToHandle = (Packet) obj;
-			if (packetToHandle.getSource() == connectionAddress) {
+			if (packetToHandle.getSource().equals(connectionAddress)) {
 				if (!handleReceivedPacket(packetToHandle)) {
 					shutDown(true, false);
 				}
@@ -88,12 +89,12 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	}
 
 	private boolean handleReceivedPacket(Packet packetToHandle) {
-//		TestingTool.output("Received packet from " + connectionAddress.toString());
+		TestingTool.output("Received packet from " + connectionAddress.toString());
 		boolean couldHandle = true;
 		
 		TraceablePacket tp = new TraceablePacket(packetToHandle);
 		
-//		TestingTool.output(tp.toString());
+		TestingTool.output(tp.toString());
 		
 		if (tp.getFlag() == ControlFlag.SYN) {
 			couldHandle = setupConnection(false, tp);
@@ -148,8 +149,8 @@ public class PacketTracker extends Observable implements NetworkLayer {
 			Packet sendablePacket = new Packet(connectionAddress, ackPacket.toByteArray());
 			trackNr = increaseValue(trackNr);
 			
-//			TestingTool.output("Acked datapacket " + tp.getTrackNr() + " from " + 
-//					connectionAddress + ". Next expected " + expectedNr);
+			TestingTool.output("Acked datapacket " + tp.getTrackNr() + " from " + 
+					connectionAddress + ". Next expected " + expectedNr);
 			
 			router.sendPacket(sendablePacket);
 		}
@@ -159,8 +160,8 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	private void processReceivedAck(TraceablePacket tp) {
 		
 		expectedNr = increaseValue(expectedNr);
-//		TestingTool.output("Packet " + tp.getAcknowledgeNumber() + " arrived succesfully at" +
-//				connectionAddress);
+		TestingTool.output("Packet " + tp.getAcknowledgeNumber() + " arrived succesfully at" +
+				connectionAddress);
 		int toRemove = PacketStats.getByTrackNr(packetsOut, tp.getAcknowledgeNumber());
 		if (toRemove != -1) {
 			packetsOut.remove(toRemove);
@@ -211,8 +212,8 @@ public class PacketTracker extends Observable implements NetworkLayer {
 					Packet sendablePacket = new Packet(connectionAddress, stat.getPacket().toByteArray());
 					stat.resending(time);
 					
-//					TestingTool.output("Resent packet for " + connectionAddress);
-//					TestingTool.output(stat.getPacket().toString());
+					TestingTool.output("Resent packet for " + connectionAddress);
+					TestingTool.output(stat.getPacket().toString());
 					
 					router.sendPacket(sendablePacket);
 				} else {
@@ -229,8 +230,8 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				packetsOut.add(new PacketStats(trackNr, time, packetToSend));
 				trackNr = increaseValue(trackNr);
 				
-//				TestingTool.output("Sent packet from buffer to " + connectionAddress);
-//				TestingTool.output(packetToSend.toString());
+				TestingTool.output("Sent packet from buffer to " + connectionAddress);
+				TestingTool.output(packetToSend.toString());
 				
 				router.sendPacket(sendablePacket);
 				
@@ -269,7 +270,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	}
 
 	private boolean sendSetupPacket() {
-//		TestingTool.output("Initiating connection with " + connectionAddress.toString());
+		TestingTool.output("Initiating connection with " + connectionAddress.toString());
 		boolean couldSend = true;
 		
 		TraceablePacket synPacket = new TraceablePacket(
@@ -278,15 +279,15 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), synPacket));
 		trackNr = increaseValue(trackNr);
 		
-//		TestingTool.output("Sent SYN packet to " + connectionAddress);
-//		TestingTool.output(synPacket.toString());
+		TestingTool.output("Sent SYN packet to " + connectionAddress);
+		TestingTool.output(synPacket.toString());
 		
 		couldSend = router.sendPacket(sendablePacket);
 		return couldSend;
 	}
 
 	private boolean sendSynAck(short synTrackNr) {
-//		TestingTool.output("Sending SYN/ACK to " + connectionAddress.toString());
+		TestingTool.output("Sending SYN/ACK to " + connectionAddress.toString());
 		boolean couldSend = true;
 		
 		TraceablePacket synAck = new TraceablePacket(trackNr, expectedNr, synTrackNr, 
@@ -295,15 +296,15 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), synAck));
 		trackNr = increaseValue(trackNr);
 		
-//		TestingTool.output("Sent SYN/ACK packet to " + connectionAddress);
-//		TestingTool.output(synAck.toString());
+		TestingTool.output("Sent SYN/ACK packet to " + connectionAddress);
+		TestingTool.output(synAck.toString());
 		
 		couldSend = router.sendPacket(sendablePacket);
 		return couldSend;
 	}
 
 	private boolean sendSetupAck(short synAckTrackNr) {
-//		TestingTool.output("Acknowledging SYN/ACK from " + connectionAddress.toString());
+		TestingTool.output("Acknowledging SYN/ACK from " + connectionAddress.toString());
 		boolean couldSend = true;
 		
 		TraceablePacket setupAck = new TraceablePacket(trackNr, expectedNr, 
@@ -311,8 +312,8 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		Packet sendablePacket = new Packet(connectionAddress, setupAck.toByteArray());
 		trackNr = increaseValue(trackNr);
 		
-//		TestingTool.output("Sent setup ACK to " + connectionAddress);
-//		TestingTool.output(setupAck.toString());
+		TestingTool.output("Sent setup ACK to " + connectionAddress);
+		TestingTool.output(setupAck.toString());
 		
 		couldSend = router.sendPacket(sendablePacket);
 		return couldSend;
@@ -320,7 +321,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	
 	public void endConnection(boolean selfInitiated, TraceablePacket tp) {
 		if (selfInitiated) {
-//			TestingTool.output("Ending connection with " + connectionAddress.toString());
+			TestingTool.output("Ending connection with " + connectionAddress.toString());
 			
 			TraceablePacket finPacket = new TraceablePacket(trackNr, expectedNr, (short) 0,
 					ControlFlag.FIN, new byte[0]);
@@ -329,18 +330,18 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), finPacket));
 				trackNr = increaseValue(trackNr);
 				
-//				TestingTool.output("Sent FIN packet to " + connectionAddress);
-//				TestingTool.output(finPacket.toString());
+				TestingTool.output("Sent FIN packet to " + connectionAddress);
+				TestingTool.output(finPacket.toString());
 				
 				router.sendPacket(sendablePacket);
 			} else {
-//				TestingTool.output("Buffered FIN packet for " + connectionAddress);
-//				TestingTool.output(finPacket.toString());
+				TestingTool.output("Buffered FIN packet for " + connectionAddress);
+				TestingTool.output(finPacket.toString());
 				
 				outgoingBuffer.add(finPacket);
 			}			
 		} else {
-//			TestingTool.output("Sending FIN/ACK to " + connectionAddress.toString());
+			TestingTool.output("Sending FIN/ACK to " + connectionAddress.toString());
 
 			expectedNr = increaseValue(tp.getTrackNr());
 			TraceablePacket finAck = new TraceablePacket(trackNr, expectedNr, tp.getTrackNr(), 
@@ -350,8 +351,8 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), finAck));
 				trackNr = increaseValue(trackNr);
 				
-//				TestingTool.output("Sent FIN/ACK packet to " + connectionAddress);
-//				TestingTool.output(finAck.toString());
+				TestingTool.output("Sent FIN/ACK packet to " + connectionAddress);
+				TestingTool.output(finAck.toString());
 				
 				router.sendPacket(sendablePacket);
 				shutDown(true, false);

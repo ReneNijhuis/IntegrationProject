@@ -10,6 +10,7 @@ import transportLayer.ControlFlag;
 import transportLayer.NetworkLayer;
 import transportLayer.Packet;
 import transportLayer.PacketStats;
+import transportLayer.PacketType;
 import transportLayer.TraceablePacket;
 
 public class PacketTrackerTestingVersion extends Observable implements NetworkLayer {
@@ -79,7 +80,8 @@ public class PacketTrackerTestingVersion extends Observable implements NetworkLa
 		if (o == router && obj instanceof Packet) {
 			Packet packetToHandle = null;
 			packetToHandle = (Packet) obj;
-			if (packetToHandle.getSource() == connectionAddress) {
+			if (packetToHandle.getSource() == connectionAddress && 
+					packetToHandle.getPacketData()[0]==(PacketType.TCP.toByte())) {
 				if (!handleReceivedPacket(packetToHandle)) {
 					shutDown(true, false);
 				}

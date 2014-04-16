@@ -315,13 +315,18 @@ public class Main implements Observer {
 	 * @param selfDestruct whether user initiated the shutdown
 	 */
 	public void shutDown(boolean userDestruct) {
-		router.deleteObserver(this);
+		mainUI.dispose();
+		chatUI.dispose();
+		loginUI.dispose();		
+		if (!multiChat) {
+			tcp.shutDown(false, true);
+		} else {
+			router.deleteObserver(this);
+		}
+		routing.deleteObserver(this);
 		routing.shutDown();
 		if (userDestruct) {
 			router.shutDown(false, true);	
-		} else {
-			mainUI.dispose();
-			// TODO TCP implementation (shutdown)
-		}
+		} 
 	}
 }

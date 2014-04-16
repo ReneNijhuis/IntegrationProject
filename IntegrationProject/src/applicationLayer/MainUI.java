@@ -312,6 +312,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		button1.setBackground(new Color(255,255,255));
 		button1.setForeground(new Color(34,121,220));
 		button1.setText("Send");
+		button1.setEnabled(false);
 		JPanel listPane4 = new JPanel(new GridBagLayout());
 		listPane4.add(button1,con7);
 		listPane4.setBorder(border3);

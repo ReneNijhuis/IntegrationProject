@@ -7,6 +7,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import applicationLayer.Main;
+
 import tools.PrintUtil;
 
 
@@ -32,11 +34,7 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 			bcAddr = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
 		} catch (UnknownHostException e) {}
 		routingTable = new ArrayList<ForwardRule>();
-		try {
-			ownAddress = InetAddress.getLocalHost();
-		} catch (UnknownHostException e) {
-			shutDown();
-		}	
+		ownAddress = Main.IP;
 	}	
 	
 	public void update(Observable observable, Object object) {

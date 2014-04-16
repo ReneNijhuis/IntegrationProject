@@ -71,7 +71,11 @@ public class RoutingProtocol extends Observable implements Observer {
 				}
 				synchronized (connectedNodes) {
 					connectedNodes.removeAll(toBeDeleted);
-				}	
+				}
+				if (toBeDeleted.size() > 0) {
+					connectedNodes.removeAll(getNonNeigbors());
+					updatereceived = true;
+				}
 			}
 
 			private void updateRouterRules() {

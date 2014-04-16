@@ -76,6 +76,9 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (!currDest.equals(bcAddr)) {
 			// drop packet
 			message += PrintUtil.START + " DROP - curr dest\n";
+		} else if (packet.getPacketData().length == 0) {
+			// drop packet
+			message += PrintUtil.START + " DROP - no data\n";
 		} else {
 			// forward packet
 			message += PrintUtil.START + " FORWARD\n";
@@ -119,6 +122,9 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (!currDest.equals(bcAddr)) {
 			// drop packet
 			message += PrintUtil.START + " DROP - curr dest\n";
+		} else if (packet.getPacketData().length == 0) {
+			// drop packet
+			message += PrintUtil.START + " DROP - no data\n";
 		} else if (ttl == 0 || dest.equals(ownAddress)) {
 			// read packet, not forward
 			message += PrintUtil.START + "READ, NOT FORWARD\n";	

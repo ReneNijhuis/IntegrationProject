@@ -68,14 +68,14 @@ public class Main implements Observer {
 		multiChat = false;
 		privPass = createHash(key);
 		privIv = createHash(privPass);
-		privEncryptor = new Encryption(privPass, privIv);
-		chatUI.setCompagionName(compagionName);
+		privEncryptor = new Encryption(privPass, privIv);		
 		//router.deleteObserver(this); //TODO
 		//tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp()); //TODO
 		//tcp.addObserver(this); //TODO
 		//tcp.start(); //TODO
 		//tcp.setupConnection(true); //TODO
 		switchUI();	
+		chatUI.setCompagionName(compagionName);
 	}
 	
 	public void toPublic() {
@@ -87,13 +87,9 @@ public class Main implements Observer {
 	}
 	
 	private void switchUI() {
+		chatUI.clear();
 		chatUI.setVisible(!multiChat);
 		mainUI.setVisible(multiChat);
-		if (multiChat) {
-			chatUI.clear();
-		} else {
-			mainUI.clear();
-		}
 	}
 	
 	/**

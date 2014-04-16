@@ -333,7 +333,7 @@ public class MainII implements Observer {
 	
 	public static void main(String[] args) {
 		@SuppressWarnings("unused")
-		Main main = new Main();
+		MainII main = new MainII();
 	}
 
 	/**

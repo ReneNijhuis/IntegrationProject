@@ -16,7 +16,7 @@ import transportLayer.TraceablePacket;
 public class PacketTracker extends Observable implements NetworkLayer {
 
 	public static final byte MAX_PENDING_PACKETS = 5;
-	public static final byte MAX_SENT_TIMES = 20;
+	public static final byte MAX_SENT_TIMES = 5;
 	public static final short TIMEOUT = 1000;
 	
 	private PacketRouter router;
@@ -46,7 +46,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		boolean couldSend = true;
 		TraceablePacket tp = new  TraceablePacket(trackNr, expectedNr, dataToSend);
 		if (!connectionAlive) {
-				couldSend = false;
+			couldSend = setupConnection(true);
 		} else { 
 			Packet sendablePacket = new Packet(connectionAddress, tp.toByteArray());
 			
@@ -126,8 +126,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		return couldHandle;
 	}
 	
-	private void processDataReceived(TraceablePacket tp) {
-		
+	private void processDataReceived(TraceablePacket tp) {		
 		if (tp.getTrackNr() - expectedNr < MAX_PENDING_PACKETS) {
 			if (tp.getTrackNr() == expectedNr) {
 				expectedNr = increaseValue(expectedNr);

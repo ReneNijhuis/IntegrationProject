@@ -22,7 +22,6 @@ import connectionLayer.InternetProtocol;
 public class PacketRouter extends Observable implements Observer, NetworkLayer {
 
 	private InternetProtocol client;
-	private InetAddress ownAddress;	
 	private byte[] key; // used for signing packets
 	private ArrayList<ForwardRule> routingTable;
 	private InetAddress bcAddr;
@@ -34,7 +33,6 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 			bcAddr = InetAddress.getByName(InternetProtocol.MULTICAST_ADDRESS);
 		} catch (UnknownHostException e) {}
 		routingTable = new ArrayList<ForwardRule>();
-		ownAddress = Main.IP;
 	}	
 	
 	public void update(Observable observable, Object object) {
@@ -64,33 +62,42 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		
 		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", true, 1);
 		message += PrintUtil.genDataLine("Action: ", 1, false);
-		if (ttl <= 0) {
-			// drop packet
-			message += PrintUtil.START + " DROP - TTL\n";	
-		} else if (!src.equals(ownAddress)) {
-			// drop packet
-			message += PrintUtil.START + " DROP - src\n";	
-		} else if (dest.equals(ownAddress)) {
-			// drop packet
-			message += PrintUtil.START + " DROP - dest\n";
-		} else if (!currDest.equals(bcAddr)) {
-			// drop packet
-			message += PrintUtil.START + " DROP - curr dest\n";
-		} else if (packet.getPacketData().length == 0) {
-			// drop packet
-			message += PrintUtil.START + " DROP - no data\n";
-		} else {
-			// forward packet
-			message += PrintUtil.START + " FORWARD\n";
-			PrintUtil.printTextln(message, true, true);
-			message = "";
-			packet.updateSignature(key);
-			try {
-				succes = client.sendPacket(packet);
-			} catch (MalformedPacketException e) {
-				// Problems
-				e.printStackTrace();
+		try {
+			if (src.equals(InetAddress.getByName("127.0.0.1")) || !src.equals(packet.getCurrentSource())) {
+				// drop packet: ip lost, reset it
+				return false;
 			}
+			if (ttl <= 0) {
+				// drop packet
+				message += PrintUtil.START + " DROP - TTL\n";	
+			} else if (!src.equals(Main.IP)) {
+				// drop packet
+				message += PrintUtil.START + " DROP - src\n";	
+			} else if (dest.equals(Main.IP)) {
+				// drop packet
+				message += PrintUtil.START + " DROP - dest\n";
+			} else if (!currDest.equals(bcAddr)) {
+				// drop packet
+				message += PrintUtil.START + " DROP - curr dest\n";
+			} else if (packet.getPacketData().length == 0) {
+				// drop packet
+				message += PrintUtil.START + " DROP - no data\n";
+			} else {
+				// forward packet
+				message += PrintUtil.START + " FORWARD\n";
+				PrintUtil.printTextln(message, true, true);
+				message = "";
+				packet.updateSignature(key);
+				try {
+					succes = client.sendPacket(packet);
+				} catch (MalformedPacketException e) {
+					// Problems
+					e.printStackTrace();
+				}
+			}
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}	
 		message += PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", false, 1);
 		message += "\n";
@@ -107,16 +114,20 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "received", true, 1);
 		message += packet.toString();
 		message += PrintUtil.genDataLine("Action: ", 1, false);//
+		if (src.equals(Main.IP) && !src.equals(packet.getCurrentSource())) {
+			// drop packet: ip lost, reset it
+			notifyObservers("IP_LOST");
+		}
 		if (ttl < 0) {
 			// drop packet
 			message += PrintUtil.START + "DROP - TTL\n";	
 		} else if (!packet.correctHash()) {
 			// drop packet
 			message += PrintUtil.START + "DROP - hash(checksum)\n";	
-		} else if (packet.getSource().equals(ownAddress)) {
+		} else if (packet.getSource().equals(Main.IP)) {
 			// drop packet
 			message += PrintUtil.START + "DROP - src\n";
-		} else if (packet.getCurrentSource().equals(ownAddress)) {
+		} else if (packet.getCurrentSource().equals(Main.IP)) {
 			// drop packet
 			message += PrintUtil.START + "DROP - curr src\n";
 		} else if (!currDest.equals(bcAddr)) {
@@ -125,7 +136,7 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (packet.getPacketData().length == 0) {
 			// drop packet
 			message += PrintUtil.START + " DROP - no data\n";
-		} else if (ttl == 0 || dest.equals(ownAddress)) {
+		} else if (ttl == 0 || dest.equals(Main.IP)) {
 			// read packet, not forward
 			message += PrintUtil.START + "READ, NOT FORWARD\n";	
 			notifyObservers(packet);

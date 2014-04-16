@@ -255,7 +255,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 					sending = true;
 					updateSendButton();
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(100);
 					} catch (InterruptedException e) {}
 					sending = false;
 					if (containsLetterOrNumber(textfield1.getText())) {

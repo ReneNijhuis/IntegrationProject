@@ -21,7 +21,7 @@ import connectionLayer.InternetProtocol;
  */
 public class RoutingProtocol extends Observable implements Observer {
 
-	public static final int HEARTBEAT_INTERVAL = 2000; //ms
+	public static final int HEARTBEAT_INTERVAL = 1000; //ms
 	private static final int TIME_OUT = 2 * HEARTBEAT_INTERVAL;
 	
 	private PacketType packetType = PacketType.ROUTING;
@@ -36,12 +36,15 @@ public class RoutingProtocol extends Observable implements Observer {
 	private boolean stop = false;
 
 	public RoutingProtocol(Main main, PacketRouter router) {	
-		this.router = router;
-		router.addObserver(this);
-		clientName = main.name;
+		this.router = router;	
+		clientName = main.name;		
 	}
 	
 	public void start() {
+		if (stop) {
+			stop = false;
+		}
+		router.addObserver(this);
 		Thread thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -225,6 +228,10 @@ public class RoutingProtocol extends Observable implements Observer {
 						// drop
 						return;
 					}
+					if (toBeDeleted.equals(Main.IP)) {
+						// drop
+						return;
+					}
 					NodeInfo tbd = getNodeByIp(toBeDeleted);
 					if (tbd == null) {
 						// drop
@@ -392,10 +399,10 @@ public class RoutingProtocol extends Observable implements Observer {
 	 * Shuts down routing protocol.
 	 */
 	public void shutDown() {
+		router.deleteObserver(this);
 		if (!stop) {
 			stop = true;		
-		} 
-		router.deleteObserver(this);
+		}	
 	}
 
 	//	public static void main(String[] args){

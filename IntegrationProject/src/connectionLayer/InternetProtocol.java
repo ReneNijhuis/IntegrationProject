@@ -40,8 +40,6 @@ public class InternetProtocol extends Observable {
 	 */
 	public InternetProtocol() {
 		try {
-			socket = new MulticastSocket(MULTICAST_PORT);
-			sendSocket = new DatagramSocket();
 			MULTICAST_ADDR = InetAddress.getByName(MULTICAST_ADDRESS);
 		} catch (IOException e) {}
 	}
@@ -53,7 +51,12 @@ public class InternetProtocol extends Observable {
 	 * @return true if successful
 	 */
 	public boolean start() {
+		if (stop) {
+			stop = false;
+		}
 		try {
+			socket = new MulticastSocket(MULTICAST_PORT);
+			sendSocket = new DatagramSocket();
 			socket.joinGroup(MULTICAST_ADDR);
 		} catch (IOException e) {
 			shutdown(true);

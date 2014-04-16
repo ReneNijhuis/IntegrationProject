@@ -110,7 +110,13 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	public void clear(){
 		textarea1.setText("");
 	}
-
+	
+	public void clearMessage() {
+		textfield1.setText("");	
+		sendEnabled = false;
+		updateSendButton();
+	}
+	
 	public JPanel changeUI(){
 		buttonpanel.removeAll();
 		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);
@@ -350,8 +356,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	public void actionPerformed(ActionEvent arg0) {
 		if (arg0.getSource() == button1) {
 			sendMessage(textfield1.getText());
-		}
-		else {
+		} else if (arg0.getSource() != buttonpanel) {
 			for (int i = 0; i < users.size(); i++){
 				if (arg0.getSource() == users.get(i)){
 					String password = addQuestion("","If you want to enter private chat with user "+connectedIps.get(i)+",\nEnter a password:",false);
@@ -492,4 +497,5 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 		return false;
 	}
+
 }

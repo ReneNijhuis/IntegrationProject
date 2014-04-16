@@ -66,7 +66,7 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		
 		String message = PrintUtil.START + PrintUtil.genHeader("PacketRouter", "send", true, 1);
 		message += PrintUtil.genDataLine("Action: ", 1, false);
-		if (ttl == 0) {
+		if (ttl <= 0) {
 			// drop packet
 			message += PrintUtil.START + " DROP - TTL\n";	
 		} else if (!src.equals(ownAddress)) {
@@ -115,10 +115,13 @@ public class PacketRouter extends Observable implements Observer, NetworkLayer {
 		} else if (packet.getSource().equals(ownAddress)) {
 			// drop packet
 			message += PrintUtil.START + "DROP - src\n";
+		} else if (packet.getCurrentSource().equals(ownAddress)) {
+			// drop packet
+			message += PrintUtil.START + "DROP - curr src\n";
 		} else if (!currDest.equals(bcAddr)) {
 			// drop packet
 			message += PrintUtil.START + " DROP - curr dest\n";
-		} else if (dest.equals(ownAddress)) {
+		} else if (ttl == 0 || dest.equals(ownAddress)) {
 			// read packet, not forward
 			message += PrintUtil.START + "READ, NOT FORWARD\n";	
 			notifyObservers(packet);

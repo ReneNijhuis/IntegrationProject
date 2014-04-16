@@ -267,8 +267,8 @@ public class RoutingProtocol extends Observable implements Observer {
 		String[] dataFragments = new String(data).split(";");
 		for (String s : dataFragments) {
 			NodeInfo node = new NodeInfo(s);
-			node.setHopDistance(node.getHopDistance() + 1); // add link cost (one hop)
-			node.setNeighbor(false);
+			node.setHopDistance((short)(node.getHopDistance() + 1)); // add link cost (one hop)
+			node.setNeighbor(false); // Delete all neighbor signs
 			nodes.add(node);
 		}
 		// remove yourself, we do not want to chat with ourselves.
@@ -318,8 +318,8 @@ public class RoutingProtocol extends Observable implements Observer {
 		return combos;		
 	}
 	
-	public HashMap<InetAddress, Integer> getIpHopCombos() {
-		HashMap<InetAddress, Integer> combos = new HashMap<InetAddress, Integer>();
+	public HashMap<InetAddress, Short> getIpHopCombos() {
+		HashMap<InetAddress, Short> combos = new HashMap<InetAddress, Short>();
 		for (NodeInfo node : connectedNodes) {
 			combos.put(node.getNodeIp(), node.getHopDistance());
 		}
@@ -353,10 +353,10 @@ public class RoutingProtocol extends Observable implements Observer {
 		return null;
 	}
 
-	private int getMaxHops() {
-		int max = 0;
+	public short getMaxHops() {
+		short max = 0;
 		for (NodeInfo node : connectedNodes) {
-			int distance = node.getHopDistance();
+			short distance = node.getHopDistance();
 			if (max < distance) {
 				max = distance;
 			}

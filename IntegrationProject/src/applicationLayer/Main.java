@@ -116,7 +116,7 @@ public class Main implements Observer {
 		System.arraycopy(cipherText, 0, fullMessage, 1, cipherText.length);
 		boolean succes = false;
 		if (multiChat) {
-			succes = router.sendPacket(Packet.generatePacket(fullMessage));
+			succes = router.sendPacket(Packet.generatePacket(fullMessage, routing.getMaxHops()));
 		} else {
 			tcp.sendData(cipherText);
 		}

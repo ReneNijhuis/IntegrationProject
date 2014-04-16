@@ -14,7 +14,7 @@ public class NodeInfo {
 	private InetAddress nodeIp;	// ip of node
 	private boolean isNeighbor; // whether or not this node is a neigbor
 	
-	private int hopDistance; 	// if neighbor this is not relevant
+	private short hopDistance; 	// if neighbor this is not relevant
 	private long lastHeartBeat; // if not neighbor this is not relevant
 	
 	/**
@@ -35,7 +35,7 @@ public class NodeInfo {
 	 * @param nodeName name of non-neighbor
 	 * @param nodeIp ip of non-neigbor
 	 */
-	public NodeInfo(String nodeName, InetAddress nodeIp, int hopDistance) {
+	public NodeInfo(String nodeName, InetAddress nodeIp, short hopDistance) {
 		this.nodeName = nodeName;
 		this.nodeIp = nodeIp;
 		this.isNeighbor = false;
@@ -56,7 +56,7 @@ public class NodeInfo {
 			throw new MalformedPacketException("Malformed ip");
 		}
 		try {
-			hopDistance = Integer.parseInt(dataParts[2]);
+			hopDistance = Short.parseShort(dataParts[2]);
 		} catch (NumberFormatException e) {
 			throw new MalformedPacketException("Malformed hop distance");
 		}
@@ -74,7 +74,7 @@ public class NodeInfo {
 		return isNeighbor;
 	}
 	
-	public int getHopDistance() {
+	public short getHopDistance() {
 		return hopDistance;
 	}
 	
@@ -86,7 +86,7 @@ public class NodeInfo {
 		this.isNeighbor = isNeighbor;
 	}
 	
-	public void setHopDistance(int hopDistance) {
+	public void setHopDistance(short hopDistance) {
 		this.hopDistance = hopDistance;
 	}
 	

@@ -100,11 +100,16 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 
 	public void deleteUser(String name){
 		if (connectedIps.contains(name)){
+			connectedIps.remove(name);
 			panel1.remove(insertpanel);
 			panel1.add(changeUI(),con6);
 			panel1.revalidate(); 
 			panel1.repaint();
 		}
+	}
+	
+	public void clear(){
+		textfield1.setText("");
 	}
 
 	public JPanel changeUI(){

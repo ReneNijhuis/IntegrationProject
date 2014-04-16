@@ -1,5 +1,6 @@
 package applicationLayer;
 
+import java.awt.Button;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -17,6 +18,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import javax.swing.BoxLayout;
+import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -38,7 +40,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	private int windowHeight = (int)(windowWidth / 1280 * 800);
 	private static final int MAX_LENGTH = 184;
 	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
-
+	private String name = null;
 	private final Main main;
 
 	private boolean sendEnabled = false;
@@ -51,6 +53,16 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	private JMenuItem helpItem = new JMenuItem("Help");
 	private JMenuItem priveChatItem = new JMenuItem("Switch");
 	private JMenuItem logOutItem = new JMenuItem("Logout");
+	private JPanel buttonpanel = new JPanel();
+	private JPanel insertpanel = new JPanel();
+	private GroupLayout layout = new GroupLayout(buttonpanel);
+	private GridBagConstraints con1 = new GridBagConstraints();
+	private GridBagConstraints con2 = new GridBagConstraints();
+	private GridBagConstraints con3 = new GridBagConstraints();
+	private GridBagConstraints con4 = new GridBagConstraints();
+	private GridBagConstraints con5 = new GridBagConstraints();
+	private GridBagConstraints con6 = new GridBagConstraints();
+	private GridBagConstraints con7 = new GridBagConstraints();
 
 	private int margin = 10;
 	private Insets insets = new Insets(margin, margin, margin, margin);
@@ -77,15 +89,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		textarea1.setEditable(false);
 		textarea2.setEditable(false);		
 
-		GridBagConstraints con1 = new GridBagConstraints();
-		GridBagConstraints con2 = new GridBagConstraints();
-		GridBagConstraints con3 = new GridBagConstraints();
-		GridBagConstraints con4 = new GridBagConstraints();
-		GridBagConstraints con5 = new GridBagConstraints();
-		GridBagConstraints con6 = new GridBagConstraints();
-		GridBagConstraints con7 = new GridBagConstraints();
-
-		con1.fill = GridBagConstraints.BOTH;
+						con1.fill = GridBagConstraints.BOTH;
 		con1.gridx = 0;
 		con1.gridy = 1;
 		con1.ipady = (int) (windowHeight / 1.8);
@@ -161,6 +165,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		listPane1.add(scrollpane);
 		panel1.add(listPane1,con2);
 
+
 		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);
 		textarea2.setFont(new Font("Calibri", Font.ITALIC, 22));
 		JTextArea toparea = new JTextArea();
@@ -169,12 +174,18 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		toparea.setForeground(new Color(34,220,214));
 		toparea.setEditable(false);
 		toparea.setText("You are now chatting with:");
-		JPanel insertpanel = new JPanel(new GridBagLayout());
+
+		buttonpanel.add(textarea2);
+		JScrollPane js = new JScrollPane(buttonpanel);
+
+		buttonpanel.setLayout(layout);
+
+		insertpanel = new JPanel(new GridBagLayout());
 		insertpanel.setBackground(new Color(34,121,220));
 		insertpanel.add(toparea,con5);
-		insertpanel.add(textarea2,con1);
+		insertpanel.add(js,con1);
 		insertpanel.setBorder(border2);
-		panel1.add(insertpanel,con6);		
+		panel1.add(insertpanel,con6);
 
 		Border border3 = new LineBorder(new Color(34,220,214), 6 ,false);
 		button1.addActionListener(this);
@@ -207,7 +218,6 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 			panel1.setBackground(new Color(34,169,220));
 			add(panel1);
 			setResizable(true);
-			setVisible(false);
 	}
 
 	public void addMessage(String name, String message) {
@@ -246,7 +256,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	public void keyTyped(KeyEvent e) {
 		char c;
 		if ((c = e.getKeyChar()) != KeyEvent.CHAR_UNDEFINED) {
-			if (e.getSource().equals(textfield1)&&c != '\n') {
+			if (e.getSource().equals(textfield1)) {
 				if (textfield1.getText().length() > MAX_LENGTH) {
 					addPopup("Username too long", "Max message length is " + MAX_LENGTH, false);
 					textfield1.setText(textfield1.getText().substring(0, MAX_LENGTH));
@@ -312,9 +322,53 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
 		}
 	}
+	
+	public void clear(){
+		textfield1.setText("");
+	}
 
 	public void setCompagionName(String name){
-		textarea2.setText(name);
+		insertpanel.removeAll();
+		panel1.remove(insertpanel);
+		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);
+		textarea2.setFont(new Font("Calibri", Font.ITALIC, 22));
+		JTextArea toparea = new JTextArea();
+		toparea.setFont(new Font("Calibri", Font.ITALIC, 28));
+		toparea.setBackground(new Color(34,121,220));
+		toparea.setForeground(new Color(34,220,214));
+		toparea.setEditable(false);
+		toparea.setText("You are now chatting with:");
+		
+		buttonpanel.add(textarea2);
+		JScrollPane js = new JScrollPane(buttonpanel);
+		buttonpanel.setLayout(layout);
+		layout.setAutoCreateGaps(true);
+		layout.setAutoCreateContainerGaps(true);
+		GroupLayout.SequentialGroup sgroup = layout.createSequentialGroup();
+		GroupLayout.SequentialGroup vgroup = layout.createSequentialGroup();
+		GroupLayout.SequentialGroup v2group = layout.createSequentialGroup();
+		GroupLayout.ParallelGroup pgroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+		GroupLayout.ParallelGroup p2group = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+		Button c = new Button(name);
+		c.setFont(new Font("Calibri", Font.ITALIC, 40));
+		c.setBackground(new Color(255,255,255));
+		c.setMinimumSize(new Dimension(0,110));
+		c.setMaximumSize(new Dimension(1000000,110));
+		c.setForeground(new Color(34,121,220));
+		pgroup.addComponent(c);
+		v2group.addComponent(c);
+		v2group.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE));
+		layout.setHorizontalGroup(sgroup.addGroup(pgroup));
+		layout.setVerticalGroup(vgroup.addGroup(p2group.addGroup(v2group)));
+		
+		insertpanel = new JPanel(new GridBagLayout());
+		insertpanel.setBackground(new Color(34,121,220));
+		insertpanel.add(toparea,con5);
+		insertpanel.add(js,con1);
+		insertpanel.setBorder(border2);
+		panel1.add(insertpanel,con6);
+		panel1.revalidate(); 
+		panel1.repaint();
 	}
 
 	public boolean addQuestion(String title, String message, boolean warning) {

@@ -39,7 +39,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	private int windowWidth = (int)(screenSize.width * 0.75d);
-	private int windowHeight = (int)(windowWidth / 1280 * 800);
+	private int windowHeight = (int)(screenSize.height * 0.75d);
 	private static final int MAX_LENGTH = 184;
 	private Dimension windowSize = new Dimension(windowWidth, windowHeight);
 	private ArrayList<String> connectedIps = new ArrayList<String>();
@@ -455,7 +455,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	 * Centers the window on the screen.
 	 */
 	private void setWindowLocation() {
-		setMinimumSize(new Dimension(1100,700));
+		setMinimumSize(new Dimension(1250, 700));
 		setLocation(
 				(int)(screenSize.getWidth() / 2 - windowSize.width / 2),
 				(int)(screenSize.getHeight() / 2 - windowSize.height / 2)

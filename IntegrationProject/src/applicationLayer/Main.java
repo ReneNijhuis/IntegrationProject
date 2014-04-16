@@ -37,6 +37,7 @@ public class Main implements Observer {
 	
 	private boolean multiChat = true;
 	private boolean resetting = false;
+	private boolean tcpSetUp = false;
 	
 	private Encryption publEncryptor;
 	private Encryption privEncryptor;
@@ -74,7 +75,7 @@ public class Main implements Observer {
 		tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp()); //TODO
 		tcp.addObserver(this); //TODO
 		tcp.start(); //TODO
-		//tcp.setupConnection(true); //TODO
+		tcpSetUp = false;
 		switchUI();	
 		chatUI.setCompagionName(compagionName);
 	}
@@ -137,6 +138,13 @@ public class Main implements Observer {
 				}
 			}
 		} else {
+			if (!tcpSetUp) {
+				tcp.setupConnection(true);
+				tcpSetUp = true;
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {}
+			}
 			succes = tcp.sendData(cipherText);
 			//succes = router.sendPacket(Packet.generatePacket(fullMessage, routing.getMaxHops()));
 			if (succes) {

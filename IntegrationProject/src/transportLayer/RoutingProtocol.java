@@ -65,13 +65,17 @@ public class RoutingProtocol extends Observable implements Observer {
 				ArrayList<NodeInfo> toBeDeleted = new ArrayList<NodeInfo>();
 				for (NodeInfo node : getNeigbors()) {
 					if (node.isTimedOut(TIME_OUT)) {
+						sendDelete(node.getNodeIp());
 						toBeDeleted.add(node);
 						notifyObservers(node);
 					}
 				}
 				synchronized (connectedNodes) {
 					connectedNodes.removeAll(toBeDeleted);
-					if (toBeDeleted.size() > 0) {
+					if (toBeDeleted.size() > 0) {			
+						for (NodeInfo node : getNeigbors()) {
+							sendDelete(node.getNodeIp());
+						}
 						connectedNodes.removeAll(getNonNeigbors());
 						updatereceived = true;
 					}

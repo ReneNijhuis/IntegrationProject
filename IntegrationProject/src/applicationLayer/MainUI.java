@@ -360,7 +360,7 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			}
 		}
 		if (arg0.getSource() == logOutItem){
-			if (addConfirmation("","Do you want to log out?",false)){
+			if (addConfirmation("","Are you sure you want to log out?",false)){
 				main.logout();
 			}
 		}

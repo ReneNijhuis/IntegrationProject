@@ -235,7 +235,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 			}
 		}
 		else if (arg0.getSource() == logOutItem){
-			if (addQuestion("","Do you want to log out?",false)){
+			if (addQuestion("","Are you sure you want to log out?",false)){
 				main.logout();
 			}
 		}

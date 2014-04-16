@@ -117,7 +117,11 @@ public class TrackerTest implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {		
-		output("Message from " + o.toString() + ": " + arg.toString());		
+		if (arg instanceof byte[]) {
+			output("Message from " + o + ": " + TestingTool.textArrayToString((byte[])arg));
+		} else {
+			output("Message from " + o.toString() + ": " + arg.toString());
+		}
 	}
 
 }

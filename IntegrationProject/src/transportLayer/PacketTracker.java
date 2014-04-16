@@ -1,28 +1,20 @@
 package transportLayer;
 
 import java.net.InetAddress;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map.Entry;
+import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import transportLayer.ControlFlag;
 import transportLayer.NetworkLayer;
 import transportLayer.Packet;
-import transportLayer.TraceablePacket;
+import transportLayer.PacketStats;
 
 public class PacketTracker extends Observable implements NetworkLayer {
 
 	public static final byte MAX_PENDING_PACKETS = 5;
 	public static final byte MAX_SENT_TIMES = 20;
 	public static final short TIMEOUT = 1000;
-	
-	private static final byte[] FIN_IN_DATA = new byte[] {-1, -1, -1}; 
-	private static final byte[] FINACK_IN_DATA = new byte[] {-1, 0, -1};
 	
 	private PacketRouter router;
 	private InetAddress connectionAddress;
@@ -34,11 +26,9 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	private short trackNr;
 	private short expectedNr;
 	
-	private LinkedBlockingQueue<byte[]> dataBuffer = new LinkedBlockingQueue<byte[]>();
-	private LinkedHashMap<Short, TraceablePacket> pendingPackets = 
-			new LinkedHashMap<Short, TraceablePacket>();
-	private LinkedHashMap<Short, Long> pendingTime = new LinkedHashMap<Short, Long>();
-	private LinkedHashMap<Short, Byte> timesSent = new LinkedHashMap<Short, Byte>();
+	private ArrayList<PacketStats> packetsOut = new ArrayList<PacketStats>();
+	private LinkedBlockingQueue<TraceablePacket> outgoingBuffer = 
+			new LinkedBlockingQueue<TraceablePacket>();
 	
 	public PacketTracker(PacketRouter router, InetAddress address) {
 		this.router = router;
@@ -49,26 +39,27 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	
 	public boolean sendData(byte[] dataToSend) {
 		boolean couldSend = true;
+		TraceablePacket tp = new  TraceablePacket(trackNr, expectedNr, dataToSend);
 		if (!connectionAlive) {
-			setupConnection(true);
-			dataBuffer.add(dataToSend);
+			//TestingTool.output("Initiating connection with " + connectionAddress);
+			couldSend = setupConnection(true);
+			outgoingBuffer.add(tp);
 		} else { 
-			//constructing the packet for sending
-			TraceablePacket tp = new  TraceablePacket(trackNr, expectedNr, ControlFlag.ACK, dataToSend);
 			Packet sendablePacket = new Packet(connectionAddress, tp.toByteArray());
 			
-			
 			//if less than 5 packets are pending, send but not acknowledged, send it else buffer it 
-			if (pendingPackets.size() < MAX_PENDING_PACKETS){
-				pendingPackets.put(trackNr, tp);
-				timesSent.put(trackNr, (byte) 1);
-				pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
+			if (packetsOut.size() < MAX_PENDING_PACKETS){
+				//TestingTool.output("Send packet to " + connectionAddress);
+				//TestingTool.output(tp.toString());
+				packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), tp));
 				trackNr = increaseValue(trackNr);
 				couldSend = router.sendPacket(sendablePacket);
 			} else {
-				dataBuffer.add(dataToSend);
+				//TestingTool.output("Buffered packet for " + connectionAddress);
+				//TestingTool.output(tp.toString());
+				outgoingBuffer.add(tp);
 				//if the buffer is filling up faster than packets are sent app has to slow down
-				if (dataBuffer.size() > MAX_PENDING_PACKETS * 2) {
+				if (outgoingBuffer.size() > MAX_PENDING_PACKETS * 2) {
 					notifyObservers("WAIT");
 					dataBufferWasFull = true;
 				}
@@ -95,75 +86,78 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	}
 
 	private boolean handleReceivedPacket(Packet packetToHandle) {
+		//TestingTool.output("Received packet from " + connectionAddress.toString());
 		boolean couldHandle = true;
+		
 		TraceablePacket tp = new TraceablePacket(packetToHandle);
-		if (tp.getFlag() == ControlFlag.SYN_ACK) {
-			pendingPackets.remove(decreaseValue(tp.getNextExpectedNr()));
-			pendingTime.remove(decreaseValue(tp.getNextExpectedNr()));
-			timesSent.remove(decreaseValue(tp.getNextExpectedNr()));
+		
+		//TestingTool.output(tp.toString());
+		
+		if (tp.getFlag() == ControlFlag.SYN) {
+			couldHandle = setupConnection(false, tp);
+		} else if (tp.getFlag() == ControlFlag.SYN_ACK) {
+			int toRemove = PacketStats.getByTrackNr(packetsOut, tp.getAcknowledgeNumber());
+			if (toRemove != -1) {
+				packetsOut.remove(toRemove);
+			}
 			couldHandle = setupConnection(true, tp);
-		} else if (!connectionAlive && tp.getFlag() == ControlFlag.ACK && Arrays.equals(tp.getData(), new byte[0])) {
-			pendingPackets.remove(decreaseValue(tp.getNextExpectedNr()));
-			pendingTime.remove(decreaseValue(tp.getNextExpectedNr()));
-			timesSent.remove(decreaseValue(tp.getNextExpectedNr()));
+		} else if (!connectionAlive && tp.getFlag() == ControlFlag.ACK) {
+			int toRemove = PacketStats.getByTrackNr(packetsOut, tp.getAcknowledgeNumber());
+			if (toRemove != -1) {
+				packetsOut.remove(toRemove);
+			}
 			expectedNr = increaseValue(expectedNr);
 			connectionAlive = true;
-		} else if (tp.getFlag() == ControlFlag.SYN) {
-			couldHandle = setupConnection(false, tp);
 		} else if (tp.getFlag() == ControlFlag.FIN) {
-			endConnection(false, null);
+			endConnection(false, tp);
 		} else if (tp.getFlag() == ControlFlag.FIN_ACK) {
 			shutDown(true, false);
-		} else if (tp.getFlag() == ControlFlag.ACK){
+		} else if (tp.getFlag() == ControlFlag.ACK) {
 			processReceivedAck(tp);
-		} else { 
+		} else if (tp.getFlag() == ControlFlag.DATA) {
+			processDataReceived(tp);
+		} else {
 			endConnection(true, null);
-		}		
+		}
 		return couldHandle;
 	}
 
-	private void processReceivedAck(TraceablePacket tp) {
-//		TestingTool.output("Received ACK from " + connectionAddress.toString());
-//		TestingTool.output(tp.toString());
-		if (Arrays.equals(tp.getData(), new byte[0])) {
-			expectedNr = increaseValue(expectedNr);
-			pendingPackets.remove(decreaseValue(tp.getNextExpectedNr()));
-			pendingTime.remove(decreaseValue(tp.getNextExpectedNr()));
-			timesSent.remove(decreaseValue(tp.getNextExpectedNr()));
-			byte[] dataToSend = dataBuffer.poll();
-			if (dataToSend != null) {
-				ControlFlag flag = ControlFlag.ACK;
-				byte[] firstThreeDataBytes = new byte[3];
-				for (int i = 0; i < 3; i++) {
-					firstThreeDataBytes[i] = dataToSend[i];
-				}
-				if (Arrays.equals(firstThreeDataBytes, FIN_IN_DATA)) {
-					flag = ControlFlag.FIN;
-				} else if (Arrays.equals(firstThreeDataBytes, FINACK_IN_DATA)) {
-					flag = ControlFlag.FIN_ACK;
-				}
-
-				TraceablePacket packetToSend = new TraceablePacket(trackNr, expectedNr, flag, dataToSend);
-				Packet sendablePacket = new Packet(connectionAddress, packetToSend.toByteArray());
-				pendingPackets.put(trackNr, packetToSend);
-				timesSent.put(trackNr, (byte) 1);
-				pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
-				trackNr = increaseValue(trackNr);
-				router.sendPacket(sendablePacket);
-			}
-		} else {
+	private void processDataReceived(TraceablePacket tp) {
+		
+		if (tp.getTrackNr() - expectedNr < MAX_PENDING_PACKETS) {
 			if (tp.getTrackNr() == expectedNr) {
 				expectedNr = increaseValue(expectedNr);
 				notifyObservers(tp.getData());
-				
-				TraceablePacket ackPacket = new TraceablePacket(trackNr, expectedNr, new byte[0]);
-				Packet sendablePacket = new Packet(connectionAddress, ackPacket.toByteArray());
-				trackNr = increaseValue(trackNr);
-				router.sendPacket(sendablePacket);
 			}
 			
+			TraceablePacket ackPacket = new TraceablePacket(trackNr, expectedNr, tp.getTrackNr());
+			Packet sendablePacket = new Packet(connectionAddress, ackPacket.toByteArray());
+			trackNr = increaseValue(trackNr);
+			
+			//TestingTool.output("Acked datapacket " + tp.getTrackNr() + " from " + 
+			//		connectionAddress + ". Next expected " + expectedNr);
+			
+			router.sendPacket(sendablePacket);
 		}
 		
+	}
+
+	private void processReceivedAck(TraceablePacket tp) {
+		
+		expectedNr = increaseValue(expectedNr);
+		//TestingTool.output("Packet " + tp.getAcknowledgeNumber() + " arrived succesfully at" +
+		//		connectionAddress);
+		int toRemove = PacketStats.getByTrackNr(packetsOut, tp.getAcknowledgeNumber());
+		if (toRemove != -1) {
+			packetsOut.remove(toRemove);
+		}
+		TraceablePacket packetToSend = outgoingBuffer.poll();
+		if (packetToSend != null) {
+			Packet sendablePacket = new Packet(connectionAddress, packetToSend.toByteArray());
+			packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), packetToSend));
+			trackNr = increaseValue(trackNr);
+			router.sendPacket(sendablePacket);
+		}
 		
 	}
 
@@ -176,6 +170,10 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				connectionAlive = false;
 				tickThread.end();
 			}
+		} else {
+			router.deleteObserver(this);
+			connectionAlive = false;
+			tickThread.end();
 		}
 	}
 
@@ -191,52 +189,43 @@ public class PacketTracker extends Observable implements NetworkLayer {
 
 	protected void tick() {
 		long time = System.currentTimeMillis();
-		Set<Entry<Short,Long>> pendingEntriesSet = pendingTime.entrySet();
-		Iterator<Entry<Short,Long>> pendingEntriesIterator = pendingEntriesSet.iterator();
-		for (int i = 0; i < pendingEntriesSet.size(); i++) {
-			Entry<Short, Long> e = pendingEntriesIterator.next();
-			if (e.getValue() <= time) {
-				short trackNrToResend = e.getKey();
-				if (timesSent.get(trackNrToResend) <= MAX_SENT_TIMES) {
-					TraceablePacket packetToResend = pendingPackets.get(trackNrToResend);
-					Packet sendablePacket = new Packet(connectionAddress, packetToResend.toByteArray());
-					pendingPackets.put(trackNrToResend, packetToResend);
-					pendingTime.put(trackNrToResend, System.currentTimeMillis() + TIMEOUT);
-					timesSent.put(trackNrToResend, (byte) (timesSent.get(trackNrToResend) + 1));
+		
+		for (int i = 0; i < packetsOut.size(); i++) {
+			PacketStats stat = packetsOut.get(i);
+			if (stat.isDepricated(time)) {
+				if (stat.getTimesSend() < MAX_SENT_TIMES) {
+					Packet sendablePacket = new Packet(connectionAddress, stat.getPacket().toByteArray());
+					stat.resending(time);
+					
+					//TestingTool.output("Resent packet for " + connectionAddress);
+					//TestingTool.output(stat.getPacket().toString());
+					
 					router.sendPacket(sendablePacket);
 				} else {
 					notifyObservers("CONNECTION_LOST");
-					shutDown(true, false);
 				}
 			}
-		}			
-		if (pendingPackets.size() < 5) {
-			byte[] dataToSend = dataBuffer.poll();
-			if (dataToSend != null) {
-				ControlFlag flag = ControlFlag.ACK;
-				byte[] firstThreeDataBytes = new byte[3];
-				for (int i = 0; i < 3; i++) {
-					firstThreeDataBytes[i] = dataToSend[i];
-				}
-				if (Arrays.equals(firstThreeDataBytes, FIN_IN_DATA)) {
-					flag = ControlFlag.FIN;
-				} else if (Arrays.equals(firstThreeDataBytes, FINACK_IN_DATA)) {
-					flag = ControlFlag.FIN_ACK;
-				}
-				TraceablePacket packetToSend = new TraceablePacket(trackNr, expectedNr, flag, dataToSend);
+		}
+		
+		if (packetsOut.size() < 5) {
+			TraceablePacket packetToSend = outgoingBuffer.poll();
+			if (packetToSend != null) {
 				Packet sendablePacket = new Packet(connectionAddress, packetToSend.toByteArray());
-				pendingPackets.put(trackNr, packetToSend);
-				timesSent.put(trackNr, (byte) 1);
-				pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
+				packetsOut.add(new PacketStats(trackNr, time, packetToSend));
 				trackNr = increaseValue(trackNr);
+				
+				//TestingTool.output("Sent packet from buffer to " + connectionAddress);
+				//TestingTool.output(packetToSend.toString());
+				
 				router.sendPacket(sendablePacket);
 				
-				if (flag == ControlFlag.FIN_ACK) {
+				if (packetToSend.getFlag() == ControlFlag.FIN_ACK) {
 					shutDown(true, false);
 				}
 			}
 		}
-		if (dataBufferWasFull && dataBuffer.isEmpty()) {
+		
+		if (dataBufferWasFull && outgoingBuffer.isEmpty()) {
 			notifyObservers("CONTINUE");
 			dataBufferWasFull = false;
 		}
@@ -254,75 +243,107 @@ public class PacketTracker extends Observable implements NetworkLayer {
 				couldSetup = sendSetupPacket();
 			} else {
 				expectedNr = increaseValue(tp.getTrackNr());
-				couldSetup = sendSetupACK();
+				couldSetup = sendSetupAck(tp.getTrackNr());
 				connectionAlive = couldSetup;
 			}
 		} else {
 			expectedNr = increaseValue(tp.getTrackNr());
-			couldSetup = sendSynAck();
+			couldSetup = sendSynAck(tp.getTrackNr());
 		}
 		return couldSetup;
 	}
 
-	private boolean sendSynAck() {
-		boolean couldSend = true;
-		TraceablePacket synAck = new TraceablePacket(trackNr, expectedNr, ControlFlag.SYN_ACK, new byte[0]);
-		Packet sendablePacket = new Packet(connectionAddress, synAck.toByteArray());
-		pendingPackets.put(trackNr, synAck);
-		timesSent.put(trackNr, (byte) 1);
-		pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
-		trackNr = increaseValue(trackNr);
-		couldSend = router.sendPacket(sendablePacket);
-		return couldSend;
-	}
-
-	private boolean sendSetupACK() {
-		boolean couldSend = true;
-		TraceablePacket setupACK = new TraceablePacket(trackNr, expectedNr, new byte[0]);
-		Packet sendablePacket = new Packet(connectionAddress, setupACK.toByteArray());
-		trackNr = increaseValue(trackNr);
-		couldSend = router.sendPacket(sendablePacket);
-		return couldSend;
-	}
-
 	private boolean sendSetupPacket() {
+		//TestingTool.output("Initiating connection with " + connectionAddress.toString());
 		boolean couldSend = true;
-		TraceablePacket synPacket = new TraceablePacket(trackNr, (short)-1, ControlFlag.SYN, new byte[0]);
+		
+		TraceablePacket synPacket = new TraceablePacket(
+				trackNr, (short) 0, (short) 0, ControlFlag.SYN, new byte[0]);
 		Packet sendablePacket = new Packet(connectionAddress, synPacket.toByteArray());
-		pendingPackets.put(trackNr, synPacket);
-		timesSent.put(trackNr, (byte) 1);
-		pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
+		packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), synPacket));
 		trackNr = increaseValue(trackNr);
+		
+		//TestingTool.output("Sent SYN packet to " + connectionAddress);
+		//TestingTool.output(synPacket.toString());
+		
+		couldSend = router.sendPacket(sendablePacket);
+		return couldSend;
+	}
+
+	private boolean sendSynAck(short synTrackNr) {
+		//TestingTool.output("Sending SYN/ACK to " + connectionAddress.toString());
+		boolean couldSend = true;
+		
+		TraceablePacket synAck = new TraceablePacket(trackNr, expectedNr, synTrackNr, 
+				ControlFlag.SYN_ACK, new byte[0]);
+		Packet sendablePacket = new Packet(connectionAddress, synAck.toByteArray());
+		packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), synAck));
+		trackNr = increaseValue(trackNr);
+		
+		//TestingTool.output("Sent SYN/ACK packet to " + connectionAddress);
+		//TestingTool.output(synAck.toString());
+		
+		couldSend = router.sendPacket(sendablePacket);
+		return couldSend;
+	}
+
+	private boolean sendSetupAck(short synAckTrackNr) {
+		//TestingTool.output("Acknowledging SYN/ACK from " + connectionAddress.toString());
+		boolean couldSend = true;
+		
+		TraceablePacket setupAck = new TraceablePacket(trackNr, expectedNr, 
+				synAckTrackNr, ControlFlag.ACK, new byte[0]);
+		Packet sendablePacket = new Packet(connectionAddress, setupAck.toByteArray());
+		trackNr = increaseValue(trackNr);
+		
+		//TestingTool.output("Sent setup ACK to " + connectionAddress);
+		//TestingTool.output(setupAck.toString());
+		
 		couldSend = router.sendPacket(sendablePacket);
 		return couldSend;
 	}
 	
 	public void endConnection(boolean selfInitiated, TraceablePacket tp) {
 		if (selfInitiated) {
-			TraceablePacket finPacket = new TraceablePacket(trackNr, expectedNr, ControlFlag.FIN, new byte[0]);
+			//TestingTool.output("Ending connection with " + connectionAddress.toString());
+			
+			TraceablePacket finPacket = new TraceablePacket(trackNr, expectedNr, (short) 0,
+					ControlFlag.FIN, new byte[0]);
 			Packet sendablePacket = new Packet(connectionAddress, finPacket.toByteArray());
-			if (pendingPackets.keySet().size() < MAX_PENDING_PACKETS){
-				pendingPackets.put(trackNr, tp);
-				timesSent.put(trackNr, (byte) 1);
-				pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
+			if (packetsOut.size() < MAX_PENDING_PACKETS) {
+				packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), finPacket));
 				trackNr = increaseValue(trackNr);
+				
+				//TestingTool.output("Sent FIN packet to " + connectionAddress);
+				//TestingTool.output(finPacket.toString());
+				
 				router.sendPacket(sendablePacket);
 			} else {
-				dataBuffer.add(FIN_IN_DATA);
-			}
+				//TestingTool.output("Buffered FIN packet for " + connectionAddress);
+				//TestingTool.output(finPacket.toString());
+				
+				outgoingBuffer.add(finPacket);
+			}			
 		} else {
-			TraceablePacket finAck = new TraceablePacket(trackNr, expectedNr, ControlFlag.FIN_ACK, new byte[0]);
+			//TestingTool.output("Sending FIN/ACK to " + connectionAddress.toString());
+
+			expectedNr = increaseValue(tp.getTrackNr());
+			TraceablePacket finAck = new TraceablePacket(trackNr, expectedNr, tp.getTrackNr(), 
+					ControlFlag.FIN_ACK, new byte[0]);
 			Packet sendablePacket = new Packet(connectionAddress, finAck.toByteArray());
-			if (pendingPackets.keySet().size() < MAX_PENDING_PACKETS){
-				pendingPackets.put(trackNr, tp);
-				timesSent.put(trackNr, (byte) 1);
-				pendingTime.put(trackNr, System.currentTimeMillis() + TIMEOUT);
+			if (packetsOut.size() < MAX_PENDING_PACKETS) {
+				packetsOut.add(new PacketStats(trackNr, System.currentTimeMillis(), finAck));
 				trackNr = increaseValue(trackNr);
+				
+				//TestingTool.output("Sent FIN/ACK packet to " + connectionAddress);
+				//TestingTool.output(finAck.toString());
+				
 				router.sendPacket(sendablePacket);
 				shutDown(true, false);
 			} else {
-				dataBuffer.add(FINACK_IN_DATA);
+				outgoingBuffer.add(finAck);
 			}
+			
 		}
 		
 	}
@@ -377,4 +398,5 @@ public class PacketTracker extends Observable implements NetworkLayer {
 			}
 		}				
 	}
+	
 }

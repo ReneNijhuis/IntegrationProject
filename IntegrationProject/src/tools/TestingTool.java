@@ -1,7 +1,6 @@
 package tools;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -269,7 +268,7 @@ public class TestingTool {
 		}		
 	}
 	
-	private String textArrayToString(byte[] ba) {
+	public static String textArrayToString(byte[] ba) {
 		String result = "\"";
 		for (byte b : ba) {
 			result += (char) b;

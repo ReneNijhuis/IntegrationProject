@@ -2,12 +2,14 @@ package transportLayer;
 
 public enum ControlFlag {
 	
-	ACK, SYN, FIN, SYN_ACK, FIN_ACK;
+	ACK, DATA, SYN, FIN, SYN_ACK, FIN_ACK;
 	
 	public byte toByte() {
 		switch(this) {
 			case ACK:
 				return (byte) 0b00000011;
+			case DATA:
+				return (byte) 0b00100100;
 			case SYN:
 				return (byte) 0b00011000;
 			case FIN:
@@ -25,6 +27,8 @@ public enum ControlFlag {
 		switch(byteFlag) {
 			case (byte) 0b00000011:
 				return ACK;
+			case (byte) 0b00100100:
+				return DATA;
 			case (byte) 0b00011000:
 				return SYN;
 			case (byte) 0b11000000:

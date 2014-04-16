@@ -30,7 +30,7 @@ public class Main implements Observer {
 	private PrivateChatUI chatUI;
 	private LoginGUI loginUI;
 	private PacketRouter router;
-	private PacketTracker tcp;
+	//private PacketTracker tcp;
 	private RoutingProtocol routing;
 	private InternetProtocol client;
 	
@@ -66,19 +66,19 @@ public class Main implements Observer {
 		privIv = createHash(privPass);
 		privEncryptor = new Encryption(privPass, privIv);
 		chatUI.setCompagionName(compagionName);
-		router.deleteObserver(this);
-		tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp());
-		tcp.addObserver(this);
-		tcp.start();
-		tcp.setupConnection(true);
+		//router.deleteObserver(this);
+		//tcp = new PacketTracker(router, routing.getNodeByName(compagionName).getNodeIp());
+		//tcp.addObserver(this);
+		//tcp.start();
+		//tcp.setupConnection(true);
 		switchUI();	
 	}
 	
 	public void toPublic() {
 		multiChat = true;
-		tcp.deleteObserver(this);
-		tcp.shutDown(false, true);
-		router.addObserver(this);
+		//tcp.deleteObserver(this);
+		//tcp.shutDown(false, true);
+		//router.addObserver(this);
 		switchUI();
 	}
 	
@@ -108,7 +108,8 @@ public class Main implements Observer {
 		if (multiChat) {
 			type = PacketType.CHAT_PUBL;
 		} else {
-			type = PacketType.CHAT_PRIV;
+			//type = PacketType.CHAT_PRIV;
+			type = PacketType.CHAT_PUBL;
 		}
 		// create and encrypt packet
 		byte[] cipherText = encrypt(name + "\"" +  message);
@@ -130,11 +131,18 @@ public class Main implements Observer {
 				}
 			}
 		} else {
-			succes = tcp.sendData(cipherText);
+			//succes = tcp.sendData(cipherText);
+			succes = router.sendPacket(Packet.generatePacket(fullMessage, routing.getMaxHops()));
 			if (succes) {
 				chatUI.addMessage(name, message);
 			} else {
 				chatUI.addPopup("Delivery failure", "Could not send message, trying to restart client", true);
+				client.shutdown();
+				client.start();	
+				router.start();
+				if (router.sendPacket(Packet.generatePacket(fullMessage, routing.getMaxHops()))) {
+					mainUI.addPopup("Succesfully reconnected", "Succesfully reconnected to network", false);
+				}
 			}
 		}
 		return succes;
@@ -162,7 +170,7 @@ public class Main implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		if (o.equals(tcp) && arg instanceof String) { //wait,shutdown, connection_lost,continue
+		/*if (o.equals(tcp) && arg instanceof String) { //wait,shutdown, connection_lost,continue
 			String mesg = (String)arg;
 			if (mesg.equals("WAIT")) {
 				tcpBufferFull = true;
@@ -172,7 +180,7 @@ public class Main implements Observer {
 				tcpBufferFull = false;
 				int retryTime = PacketTracker.MAX_SENT_TIMES * PacketTracker.TIMEOUT / 1000;
 				chatUI.addPopup("Connection lost", "TCP connection lost, " +
-						"all messages send for " + retryTime + " seconds did not arrive" +
+						"all messages send for " + retryTime + " seconds did not arrive " +
 						"you will be redirected to the public chat.", true);
 				toPublic();
 			} else if (mesg.equals("CONTINUE")) {
@@ -197,7 +205,7 @@ public class Main implements Observer {
 				msg += PrintUtil.genHeader("Application", "got message", false, 0);
 				PrintUtil.printTextln(msg);
 			}
-		} else if (o.equals(router) && arg instanceof String) {
+		} else*/ if (o.equals(router) && arg instanceof String) {
 			String message = (String)arg;
 			if (message.equals("SHUTDOWN")) {
 				shutDown(false);
@@ -332,7 +340,8 @@ public class Main implements Observer {
 		chatUI.dispose();
 		loginUI.dispose();		
 		if (!multiChat) {
-			tcp.shutDown(false, true);
+			//tcp.shutDown(false, true);
+			router.deleteObserver(this);
 		} else {
 			router.deleteObserver(this);
 		}

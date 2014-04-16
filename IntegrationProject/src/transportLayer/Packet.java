@@ -7,6 +7,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import applicationLayer.Main;
+
 import connectionLayer.InternetProtocol;
 import encryptionLayer.Encryption;
 
@@ -298,13 +300,9 @@ public class Packet {
 		InetAddress source;
 		InetAddress destination;
 		try {
-			currentSource = InetAddress.getLocalHost();
-			source = InetAddress.getLocalHost();
+			currentSource = Main.IP;
+			source = Main.IP;
 			destination = getBroadcastAddress();
-		} catch (UnknownHostException e) {
-			// will probably never happen
-			return null;
-		}
 		short TTL = ttl;
 		try {
 			return new Packet(currentSource, source, destination, TTL, data);

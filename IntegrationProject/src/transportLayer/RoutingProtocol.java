@@ -63,7 +63,7 @@ public class RoutingProtocol extends Observable implements Observer {
 
 			private void deleteTimedOutHosts() {
 				ArrayList<NodeInfo> toBeDeleted = new ArrayList<NodeInfo>();
-				for (NodeInfo node : connectedNodes) {
+				for (NodeInfo node : getNeigbors()) {
 					if (node.isTimedOut(TIME_OUT)) {
 						toBeDeleted.add(node);
 						notifyObservers(node);

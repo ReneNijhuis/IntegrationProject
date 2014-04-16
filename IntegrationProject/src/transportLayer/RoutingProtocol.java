@@ -112,7 +112,7 @@ public class RoutingProtocol extends Observable implements Observer {
 	 * send a delete packet.
 	 */
 	public void sendDelete(InetAddress removedIP) {	
-		sendRoutingPacket(RoutingType.DELETE, getMaxHops(), removedIP.toString());		
+		sendRoutingPacket(RoutingType.DELETE, getMaxHops(), removedIP.getAddress());		
 	}
 	
 	/**
@@ -122,10 +122,20 @@ public class RoutingProtocol extends Observable implements Observer {
 	 * @param data data of the packet
 	 */
 	private void sendRoutingPacket(RoutingType routingType, int TTL, String data) {	
-		byte[] toSend = new byte[data.length() + 2];
+		sendRoutingPacket(routingType, TTL, data.getBytes());
+	}
+	
+	/**
+	 * Sends a routing packet.
+	 * @param type the type of routing packet
+	 * @param TTL the TTL of the packet
+	 * @param data data of the packet
+	 */
+	private void sendRoutingPacket(RoutingType routingType, int TTL, byte[] data) {	
+		byte[] toSend = new byte[data.length + 2];
 		toSend[0] = packetType.toByte();
 		toSend[1] = routingType.toByte();
-		System.arraycopy(data.getBytes(), 0, toSend, 2, data.length());
+		System.arraycopy(data, 0, toSend, 2, data.length);
 		router.sendPacket(Packet.generatePacket(toSend,(short) TTL));
 	}
 	

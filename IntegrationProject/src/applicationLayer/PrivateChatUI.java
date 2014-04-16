@@ -344,6 +344,7 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	}
 
 	public void setCompagionName(String name){
+		buttonpanel = new JPanel();
 		insertpanel.removeAll();
 		panel1.remove(insertpanel);
 		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);

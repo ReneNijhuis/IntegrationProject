@@ -33,8 +33,8 @@ import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 
 public class PrivateChatUI extends JFrame implements KeyListener, ActionListener{ // <-- should extend JFrame: easier and more clear implementation
-	private static final long serialVersionUID = 5488009698932086488L;
 
+	private static final long serialVersionUID = -1893266046881583909L;
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 	private int windowWidth = (int)(screenSize.width * 0.75d);
 	private int windowHeight = (int)(screenSize.height * 0.75d);
@@ -68,6 +68,10 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	private int margin = 10;
 	private Insets insets = new Insets(margin, margin, margin, margin);
 
+	/**
+	 * Creates a PrivateChatUI object
+	 * @param main
+	 */
 	public PrivateChatUI(Main main){
 		super("Chatbox");
 		this.main = main;
@@ -85,6 +89,9 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		setVisible(false);
 	}
 
+	/**
+	 * Builds the GUI
+	 */
 	public void createInterface(){
 
 		textarea1.setEditable(false);
@@ -221,6 +228,11 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 			setResizable(true);
 	}
 
+	/**
+	 * Adds a name and message to the textarea
+	 * @param name
+	 * @param message
+	 */
 	public void addMessage(String name, String message) {
 		textarea1.append(name + ":\t" + message + "\n");		
 	}
@@ -242,6 +254,10 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		}
 	}
 
+	/**
+	 * Sends a message to the main and update the sendbutton
+	 * @param message
+	 */
 	private void sendMessage(final String message) {
 		Thread t = new Thread(new Runnable() {	
 			@Override
@@ -299,6 +315,9 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 	@Override
 	public void keyReleased(KeyEvent e) {}
 
+	/**
+	 * Updates the send button
+	 */
 	private void updateSendButton() {
 		if (!sending && sendEnabled && !button1.isEnabled()) {
 			button1.setEnabled(true);
@@ -307,6 +326,11 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		}
 	}
 
+	/**
+	 * Checks is a given string contains a letter or number
+	 * @param s
+	 * @return
+	 */
 	private boolean containsLetterOrNumber(String s) {
 		for (char c : s.toCharArray()) {
 			if (isLetterOrNumber(c)) {
@@ -316,6 +340,11 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		return false;
 	}
 
+	/**
+	 * Checks is c is a letter or number
+	 * @param c
+	 * @return
+	 */
 	private boolean isLetterOrNumber(char c) {
 		return Character.isLetter(c) || Character.isDigit(c);
 	}
@@ -331,6 +360,12 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 				);
 	}
 
+	/**
+	 * Adds a popup with a title and a message
+	 * @param title
+	 * @param message
+	 * @param warning
+	 */
 	public void addPopup(String title, String message, boolean warning) {
 		if (!warning) {
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
@@ -339,10 +374,17 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		}
 	}
 	
+	/**
+	 * Clears the textarea
+	 */
 	public void clear(){
 		textarea1.setText("");
 	}
 
+	/**
+	 * Sets the name of the person the privatechat is with
+	 * @param name
+	 */
 	public void setCompagionName(String name){
 		buttonpanel = new JPanel();
 		insertpanel.removeAll();
@@ -388,6 +430,13 @@ public class PrivateChatUI extends JFrame implements KeyListener, ActionListener
 		panel1.repaint();
 	}
 
+	/**
+	 * Adds a popup wich can receive user input
+	 * @param title
+	 * @param message
+	 * @param warning
+	 * @return
+	 */
 	public boolean addQuestion(String title, String message, boolean warning) {
 		int selection = JOptionPane.showConfirmDialog(null, message, title
 				, JOptionPane.OK_CANCEL_OPTION

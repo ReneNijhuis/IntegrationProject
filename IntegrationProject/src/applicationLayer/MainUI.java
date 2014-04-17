@@ -70,6 +70,10 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	private int margin = 10;
 	private Insets insets = new Insets(margin, margin, margin, margin);
 
+	/**
+	 * Construcs a MainUI object
+	 * @param main
+	 */
 	public MainUI(Main main){
 		super("Chatbox");
 		this.main = main;
@@ -87,6 +91,10 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		setVisible(false);
 	}
 
+	/**
+	 * Adds a new user with a name to insertpanel
+	 * @param name
+	 */
 	public void addUser(String name){
 		if (!connectedIps.contains(name)){
 			panel1.remove(insertpanel);
@@ -97,6 +105,10 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 	}
 
+	/**
+	 * Deletes a user from insertpanel
+	 * @param name
+	 */
 	public void deleteUser(String name){
 		if (connectedIps.contains(name)){
 			connectedIps.remove(name);
@@ -107,16 +119,26 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 	}
 	
+	/**
+	 * clears the textarea
+	 */
 	public void clear(){
 		textarea1.setText("");
 	}
 	
+	/**
+	 * clears the textfield where input is received
+	 */
 	public void clearMessage() {
 		textfield1.setText("");	
 		sendEnabled = false;
 		updateSendButton();
 	}
 	
+	/**
+	 * Rebuilds the insertpanel
+	 * @return
+	 */
 	public JPanel changeUI(){
 		buttonpanel.removeAll();
 		Border border2 = new LineBorder(new Color(34,121,220), 6 ,false);
@@ -157,6 +179,9 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		return insertpanel;
 	}
 
+	/**
+	 * Makes buttons for all connected users
+	 */
 	public void getButtons(){
 		ArrayList<Button> buttons = new ArrayList<Button>();
 		for (int i = 0; i < connectedIps.size(); i++){
@@ -175,6 +200,9 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 	}
 
+	/**
+	 * Builds the GUI
+	 */
 	public void createInterface(){
 		textfield1 = new JTextField();
 		textarea1 = new JTextArea();
@@ -348,6 +376,11 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			setResizable(true);
 	}
 
+	/**
+	 * Adds a name and a message to the textarea
+	 * @param name
+	 * @param message
+	 */
 	public void addMessage(String name, String message) {
 		textarea1.append(name + ":\t" + message + "\n");		
 	}
@@ -372,6 +405,10 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 			}
 		}
 	}
+	/**
+	 * Sends a message to the main and updates the sendbutton
+	 * @param message
+	 */
 	private void sendMessage(final String message) {
 		Thread t = new Thread(new Runnable() {	
 			@Override
@@ -429,6 +466,9 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 	@Override
 	public void keyReleased(KeyEvent e) {}
 
+	/**
+	 * Updates the send button
+	 */
 	private void updateSendButton() {
 		if (!sending && sendEnabled && !button1.isEnabled()) {
 			button1.setEnabled(true);
@@ -437,7 +477,11 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 	}
 
-
+	/**
+	 * Checks if s contains a letter or number
+	 * @param s
+	 * @return
+	 */
 	private boolean containsLetterOrNumber(String s) {
 		for (char c : s.toCharArray()) {
 			if (isLetterOrNumber(c)) {
@@ -447,6 +491,11 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		return false;
 	}
 
+	/**
+	 * Checks if c is a letter or number
+	 * @param c
+	 * @return
+	 */
 	private boolean isLetterOrNumber(char c) {
 		return Character.isLetter(c) || Character.isDigit(c);
 	}
@@ -462,6 +511,12 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 				);
 	}
 
+	/**
+	 * Adds a popup with a title and a message
+	 * @param title
+	 * @param message
+	 * @param warning
+	 */
 	public void addPopup(String title, String message, boolean warning) {
 		if (!warning) {
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
@@ -470,6 +525,14 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		}
 
 	}
+	
+	/**
+	 * Adds a popup wich can receive user input
+	 * @param title
+	 * @param message
+	 * @param warning
+	 * @return
+	 */
 	public String addQuestion(String title, String message, boolean warning) {
 
 		String s = (String)JOptionPane.showInputDialog(
@@ -488,6 +551,13 @@ public class MainUI extends JFrame implements KeyListener, ActionListener{ // <-
 		return null;
 	}
 
+	/**
+	 * Adds a popup for confirmation
+	 * @param title
+	 * @param message
+	 * @param warning
+	 * @return
+	 */
 	public boolean addConfirmation(String title, String message, boolean warning) {
 		int selection = JOptionPane.showConfirmDialog(null, message, title
 				, JOptionPane.OK_CANCEL_OPTION

@@ -49,7 +49,10 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	private boolean nameTyped = false;
 	private boolean passwordTyped = false;
 
-	/** Constructs a LoginGUI object. */
+	/**
+	 * Constructs a LoginGUI object
+	 * @param main
+	 */
 	public LoginGUI(Main main) {
 		this.main = main;
 		buildGUI();
@@ -65,7 +68,9 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		});
 	}
 
-	/** builds the GUI. */
+	/**
+	 * Builds the GUI
+	 */
 	public void buildGUI() {
 		setSize(windowSize);
 		setWindowLocation();
@@ -134,6 +139,11 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		
 	}
 
+	/**
+	 * Checks if the given password is valid
+	 * @param s
+	 * @return
+	 */
 	public boolean isValidPassword(String s){
 		return s != null && s.length() >= 6 && !s.contains(" ");
 	}
@@ -146,6 +156,9 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		}	
 	}
 	
+	/**
+	 * Logs in in the Main, using the name and passwords from the JTextfield and the JPasswordfield.
+	 */
 	private void login() {
 		String theName = name.getText();
 		String thePass = new String(password.getPassword());
@@ -162,6 +175,9 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		}
 	}
 	
+	/**
+	 * resets the user interface
+	 */
 	public void reset() {
 		name.setText("");
 		password.setText("");
@@ -182,6 +198,11 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 
 	}
 
+	/**
+	 * Checks if the length of text in the textfields is not too long
+	 * @param e
+	 * @param item
+	 */
 	private void updateFieldBooleans(KeyEvent e, JTextField item) {
 		String s = item.getText() + e.getKeyChar();
 		boolean validInput = containsLetterOrNumber(s);
@@ -201,6 +222,9 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		
 	}
 
+	/**
+	 * Updates the login button
+	 */
 	private void updateLoginButton() {
 		if (nameTyped && passwordTyped && !bLogin.isEnabled()) {
 			bLogin.setEnabled(true);
@@ -209,6 +233,11 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		}
 	}
 	
+	/**
+	 * checks if s contains a letter or number
+	 * @param s
+	 * @return
+	 */
 	private boolean containsLetterOrNumber(String s) {
 		for (char c : s.toCharArray()) {
 			if (isLetterOrNumber(c)) {
@@ -218,6 +247,11 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 		return false;
 	}
 	
+	/**
+	 * checks if c is a letter or number
+	 * @param c
+	 * @return
+	 */
 	private boolean isLetterOrNumber(char c) {
 		return Character.isLetter(c) || Character.isDigit(c);
 	}
@@ -238,6 +272,12 @@ public class LoginGUI extends JFrame implements ActionListener, KeyListener {
 	public void keyReleased(KeyEvent e) {}
 
 
+	/**
+	 * Adds a popup message with a title and a message
+	 * @param title
+	 * @param message
+	 * @param warning
+	 */
 	public void addPopup(String title, String message, boolean warning) {
 		if (!warning) {
 			JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);

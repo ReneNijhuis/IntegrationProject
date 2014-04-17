@@ -7,24 +7,39 @@ import java.util.Scanner;
 import encryptionLayer.Encryption;
 import encryptionLayer.MalformedCipherTextException;
 
+
+/**
+ * The class used for testing other classes before implementing them.
+ * @author René Nijhuis
+ * @version 1.0
+ */
 public class TestingTool {
 	
-	private static Random rand;
+	private Random rand;
 	private short[] shorts;
 	private int[] ints;
 	private byte[][] text;
 	private Encryption encrypt;
 	
 	public static void main(String[] arg) {
-		rand = new Random(new Random().nextLong());
 		new TestingTool().runTest();
 	}
 	
+	/**
+	 * The constructor of the testing class. <br>
+	 * It creates a new random generator and an instance of the encryption class.
+	 */
 	public TestingTool() {
+		rand = new Random(new Random().nextLong());
 		encrypt = new Encryption("waterslang".getBytes(), "octopus".getBytes());
 	}
 
-	private void runTest() {
+	/**
+	 * Runs the test. <br>
+	 * It takes command line input to determine what tests will be run. <br>
+	 * With exception of the PacketTracker test, all tests need to have the according variables generated first.
+	 */
+	public void runTest() {
 		Scanner input = new Scanner(System.in);
 		output("Test started");
 		loop:
@@ -137,6 +152,13 @@ public class TestingTool {
 		}
 	}
 	
+	/**
+	 * Generates an array of byte-arrays. <br>
+	 * The values of the bytes in the byte-array range from 32 up to 126 inclusive.
+	 * This range is chosen because it is the range of ASCII characters and makes the byte-array mimic random text. 
+	 * @param amountOfTexts the amount of byte-arrays
+	 * @param charactersPerText the amount of bytes per byte-array.
+	 */
 	private void generateEncrText(int amountOfTexts, int charactersPerText) {
 		text = new byte[amountOfTexts][charactersPerText];
 		for (int i = 0; i < amountOfTexts; i++) {
@@ -147,6 +169,10 @@ public class TestingTool {
 		output(amountOfTexts + " texts of " + charactersPerText + " characters to encrypt generated");
 	}
 	
+	/**
+	 * Generates an array of random shorts.
+	 * @param amount the amount of randomly generated shorts
+	 */
 	private void generateShorts(int amount){
 		shorts = new short[amount];
 		for (int i = 0; i < amount; i++) {
@@ -155,6 +181,10 @@ public class TestingTool {
 		output(amount + " shorts generated");
 	}
 	
+	/**
+	 * Generates an array of random integers.
+	 * @param amount the amount of randomly generated integers
+	 */
 	private void generateInts(int amount) {
 		ints = new int[amount];
 		for (int i = 0; i < amount; i++) {
@@ -216,6 +246,13 @@ public class TestingTool {
 		
 	}
 	
+	/**
+	 * Converts the specified short to a byte-array and back to test whether the conversion works.
+	 * If the conversion gives back a short other than the input, the test results will be printed.
+	 * @param s the short to test
+	 * @param nr the number of the test
+	 * @return true if the test is unsuccessful
+	 */
 	private boolean getResults(short s, int nr) {
 		byte[] sBytes = ByteUtils.shortToBytes(s);
 		short sRebuilt = ByteUtils.bytesToShort(sBytes);
@@ -231,6 +268,13 @@ public class TestingTool {
 		}
 	}
 	
+	/**
+	 * Converts the specified integer to a byte-array and back to test whether the conversion works.
+	 * If the conversion gives back an integer other than the input, the test results will be printed.
+	 * @param i the integer to test
+	 * @param nr the number of the test
+	 * @return true if the test is unsuccessful
+	 */
 	private boolean getResults(int i, int nr) {
 		byte[] intBytes = ByteUtils.intToBytes(i);
 		int intRebuilt = ByteUtils.bytesToInt(intBytes);
@@ -247,6 +291,13 @@ public class TestingTool {
 		}
 	}
 	
+	/**
+	 * Encrypts the specified byte-array and then decrypts it to test whether the encryption works.
+	 * If the decryption gives back a byte-array different from the input, the test results will be printed.
+	 * @param ba the byte-array to test
+	 * @param nr the number of the test
+	 * @return true if the test is unsuccessful
+	 */
 	private boolean getResults(byte[] ba, int nr) {
 		byte[] encText = encrypt.encrypt(ba);
 		try {
@@ -268,6 +319,10 @@ public class TestingTool {
 		}		
 	}
 	
+	/**
+	 * Returns a String of the ASCII characters represented by the byte-array.
+	 * @param ba the byte-array to convert
+	 */
 	public static String textArrayToString(byte[] ba) {
 		String result = "\"";
 		for (byte b : ba) {
@@ -277,6 +332,11 @@ public class TestingTool {
 		return result;
 	}
 	
+	/**
+	 * Prints the argument to the console. <br>
+	 * If the argument is a String and starts with "ERROR:" the error output is used.
+	 * @param arg the object to be printed
+	 */
 	public static void output(Object arg) {
 		if (arg instanceof String) {
 			Scanner scan = new Scanner((String) arg);

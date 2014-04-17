@@ -3,9 +3,8 @@ package tools;
 /**
  * All functions used for converting to and from byte arrays.
  * @author René Nijhuis & Rob van Emous
- * @version 0.1
+ * @version 1.0
  */
-
 public class ByteUtils {
 
 	/**

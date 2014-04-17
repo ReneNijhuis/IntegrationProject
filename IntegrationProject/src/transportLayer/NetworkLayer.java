@@ -5,7 +5,7 @@ import java.util.Observer;
 /**
  * The interface to be implemented by every network layer.
  * @author René Nijhuis
- * @version 0.1
+ * @version 1.0
  */
 
 public interface NetworkLayer extends Observer{

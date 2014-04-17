@@ -7,7 +7,7 @@ import transportLayer.PacketType;
 /**
  * Inner packet used by the PacketTracer
  * @author René Nijhuis
- * @version 0.1
+ * @version 1.0
  */
 public class TraceablePacket {
 	
@@ -19,7 +19,7 @@ public class TraceablePacket {
 	private byte[] data;
 	
 	/** 
-	 * reconstructs a TraceablePacket from the data in the passed Packet.
+	 * Reconstructs a TraceablePacket from the data in the passed Packet.
 	 * @param packetToUnpack
 	 */
 	public TraceablePacket(Packet packetToUnpack) {
@@ -33,7 +33,7 @@ public class TraceablePacket {
 	}
 	
 	/**
-	 * constructs a TraceablePacket for Data transport: 0 as acknowledment number and DATA as ControlFlag.
+	 * Constructs a TraceablePacket for Data transport: 0 as acknowledment number and DATA as ControlFlag.
 	 * @param trackNr the number of this packet
 	 * @param nextExpectedNr the number of the next packet expected to arrive
 	 * @param dataToSend the application data that is sent with this packet
@@ -53,7 +53,7 @@ public class TraceablePacket {
 	}
 	
 	/**
-	 * constructs a TraceablePacket with the arguments for its fields.
+	 * Constructs a TraceablePacket with the arguments for its fields.
 	 * @param trackNr the number of this packet
 	 * @param nextExpectedNr the number of the next packet expected to arrive
 	 * @param toAcknowledge the number of the package to which this one is the reply
@@ -69,14 +69,14 @@ public class TraceablePacket {
 	}
 	
 	/**
-	 * returns the trackNr of this packet.
+	 * Returns the trackNr of this packet.
 	 */
 	public short getTrackNr() {
 		return trackNr;
 	}
 	
 	/**
-	 * returns the nextExpectedNr of this packet.
+	 * Returns the nextExpectedNr of this packet.
 	 */
 	public short getNextExpectedNr() {
 		return expectedNr;
@@ -87,14 +87,14 @@ public class TraceablePacket {
 	}
 	
 	/**
-	 * returns the application data in this packet.
+	 * Returns the application data in this packet.
 	 */
 	public byte[] getData() {
 		return data;
 	}
 	
 	/**
-	 * returns the ControlFlag of this packet.
+	 * Returns the ControlFlag of this packet.
 	 */
 	public ControlFlag getFlag() {
 		return flags;
@@ -126,7 +126,7 @@ public class TraceablePacket {
 	}
 	
 	/**
-	 * returns the string representation of the packet.
+	 * Returns the string representation of the packet.
 	 */
 	public String toString() {
 		String s = "-------------------------------------------------\n";

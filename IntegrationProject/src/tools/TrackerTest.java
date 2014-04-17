@@ -8,6 +8,11 @@ import java.util.Scanner;
 
 import transportLayer.TraceablePacket;
 
+/**
+ * The testing class used to test the PacketTracker.
+ * @author René Nijhuis
+ * @version 1.0
+ */
 public class TrackerTest implements Observer {
 	
 	private Scanner input;
@@ -17,6 +22,13 @@ public class TrackerTest implements Observer {
 	private PacketTrackerTestingVersion track2;
 	private Random rand;
 
+	/**
+	 * The constructor for the TrackerTest class. <br>
+	 * It creates two instances of TrackerTestingRouter, links the router together, 
+	 * creates two instances of PacketTrackerTestingVersion, links the PacketTrackers to the routers,
+	 * add itself as observer of the tracker and starts the trackers.
+	 * @param scan the scanner to use throughout this class
+	 */
 	public TrackerTest(Scanner scan) {
 		input = scan;
 		rand = new Random(new Random().nextLong());
@@ -32,14 +44,13 @@ public class TrackerTest implements Observer {
 			track1.start();
 			track2.start();
 		} catch (UnknownHostException e) {
-			output("Something went wrong creating the routers");
-			try {
-				this.finalize();
-			} catch (Throwable e2) {
-			}
+			output("ERROR: Something went wrong creating the routers");
 		}		
 	}
 
+	/**
+	 * Runs the test taking command line input to decide what the PacketTrackers will do.
+	 */
 	public void runTest() {
 		output("Tracker test started");
 		loop:
@@ -54,12 +65,12 @@ public class TrackerTest implements Observer {
 			case "setu":
 				startSetup();
 				break;
-			case "send":
+			case "send": //send one message
 				Boolean drop = input.next().toLowerCase().startsWith("y");
 				String message = input.next();
 				sendMessage(true, drop, message);
 				break;
-			case "sen+":
+			case "sen+": //as many messages as there are words and drop the first once
 				boolean first = true;
 				while (input.hasNext()) {
 					String message2 = input.next();
@@ -77,25 +88,30 @@ public class TrackerTest implements Observer {
 			}
 		}
 		output("Tracker test ended");
-		try {
-			track1.finalize();
-			track2.finalize();
-			route1.finalize();
-			route2.finalize();
-		} catch (Throwable e) {
-			//do nothing
-		}
+		track1 = null;
+		track2 = null;
+		route1 = null;
+		route2 = null;
 	}
 
+	/**
+	 * Tells one of both trackers to end the connection in a civilized way.
+	 */
 	private void disconnect() {
 		int ender = 1 + rand.nextInt(2);
 		if (ender == 1) {
-			track1.endConnection(true, null);
+			track1.shutDown(false, true);
 		} else if (ender == 2) {
-			track2.endConnection(true, null);
+			track2.shutDown(false, true);
 		}
 	}
 
+	/**
+	 * Tells one of both trackers to send a message to the other.
+	 * @param randomSender true to randomize the sender or use tracker1
+	 * @param drop true to drop the message
+	 * @param message the message to be send by the tracker
+	 */
 	private void sendMessage(Boolean randomSender, Boolean drop, String message) {
 		int sender = 1;
 		if (randomSender) {
@@ -110,6 +126,9 @@ public class TrackerTest implements Observer {
 		}
 	}
 
+	/**
+	 * Tells one of both trackers to initiate the connection between them.
+	 */
 	private void startSetup() {
 		int initiater = 1 + rand.nextInt(2);
 		if (initiater == 1) {
@@ -125,12 +144,16 @@ public class TrackerTest implements Observer {
 		TestingTool.output(obj);
 	}
 
+	/**
+	 * Outputs the message received from the tracker to the console using the error output
+	 * to make the message stand out.
+	 */
 	@Override
 	public void update(Observable o, Object arg) {		
 		if (arg instanceof byte[]) {
-			System.err.println("Message from " + o + ": " + TestingTool.textArrayToString((byte[])arg));
+			output("ERROR: Message from " + o + ": " + TestingTool.textArrayToString((byte[])arg));
 		} else {
-			System.err.println("Message from " + o.toString() + ": " + arg.toString());
+			output("ERROR: Message from " + o.toString() + ": " + arg.toString());
 		}
 	}
 

@@ -13,6 +13,13 @@ import transportLayer.PacketStats;
 import transportLayer.PacketType;
 import transportLayer.TraceablePacket;
 
+/**
+ * The PacketTracker class modified to be used in testing.<br>
+ * It uses TrackerTestingRouters instead of normal PacketRouters all other things are the same.<br>
+ * See the PacketTracker class in the transportLayer package for documentation. 
+ * @author René Nijhuis
+ * @version 2.0
+ */
 public class PacketTrackerTestingVersion extends Observable implements NetworkLayer {
 
 	public static final byte MAX_PENDING_PACKETS = 5;
@@ -46,7 +53,7 @@ public class PacketTrackerTestingVersion extends Observable implements NetworkLa
 		boolean couldSend = true;
 		TraceablePacket tp = new  TraceablePacket(trackNr, expectedNr, dataToSend);
 		if (!connectionAlive) {
-			couldSend = false;
+			couldSend = setupConnection(true, null);
 		} else { 
 			Packet sendablePacket = new Packet(connectionAddress, tp.toByteArray());
 			
@@ -392,10 +399,6 @@ public class PacketTrackerTestingVersion extends Observable implements NetworkLa
 	public void notifyObservers(Object arg) {
 		setChanged();
 		super.notifyObservers(arg);
-	}
-	
-	public void finalize() throws Throwable {
-		super.finalize();
 	}
 		
 	private TraceablePacket getSmallest(ArrayList<TraceablePacket> packets) {

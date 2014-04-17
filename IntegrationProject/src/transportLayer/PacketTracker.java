@@ -13,6 +13,11 @@ import transportLayer.Packet;
 import transportLayer.PacketStats;
 import transportLayer.TraceablePacket;
 
+/**
+ * The instance that checks whether packet arrive and sends them again if they do not arrive.
+ * @author René Nijhuis
+ * @version 2.0
+ */
 public class PacketTracker extends Observable implements NetworkLayer {
 
 	public static final byte MAX_PENDING_PACKETS = 5;
@@ -35,6 +40,11 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	private LinkedBlockingQueue<TraceablePacket> outgoingBuffer = 
 			new LinkedBlockingQueue<TraceablePacket>();
 	
+	/**
+	 * Creates a new PacketTracker with a random initial trackNr and adds itself as observer to the router.
+	 * @param router the router to use when sending
+	 * @param address the address to connect to
+	 */
 	public PacketTracker(PacketRouter router, InetAddress address) {
 		this.router = router;
 		this.router.addObserver(this);
@@ -42,6 +52,14 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		trackNr = (short) (new Random().nextInt() >>> 16);
 	}
 	
+	/**
+	 * Sends a packet. <br>
+	 * If a connection is not yet established it will be setup. <br>
+	 * A packet with the data will be buffered if the maximum amount of unacknowledged 
+	 * packets is already reached.
+	 * @param dataToSend the data which has to be send.
+	 * @return true if no problems are encountered
+	 */
 	public boolean sendData(byte[] dataToSend) {
 		boolean couldSend = true;
 		TraceablePacket tp = new  TraceablePacket(trackNr, expectedNr, dataToSend);
@@ -70,7 +88,12 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		}
 		return couldSend;
 	}
-
+	
+	/**
+	 * Receives messages from the router. <br>
+	 * If the message is "SHUTDOWN" it will force a shutdown because the router crashed.<br>
+	 * If the message is a packet it will be handled
+	 */
 	@Override
 	public void update(Observable o, Object obj) {
 		if (o == router && obj instanceof String && ((String) obj).equals("SHUTDOWN")) {
@@ -176,6 +199,13 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		
 	}
 
+	/**
+	 * Shuts down the connection.
+	 * depending on the arguments it will be a hard shutdown or the connection will be ended
+	 * using a FIN packet.
+	 * @param selfDestruct true if this PacketTracker itself has invoked the shutDown command.
+	 * @param appInit true if the application has commanded for a shutDown
+	 */
 	public void shutDown(boolean selfDestruct, boolean appInit) {
 		if (selfDestruct || appInit) {
 			if (appInit) {
@@ -192,6 +222,9 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		}
 	}
 
+	/**
+	 * Starts a tickThread which will use the tick function once every 5 ms until it shuts down.
+	 */
 	@Override
 	public boolean start() {
 		tickThread =  new Ticker("PacketTracker-" + connectionAddress + "'s tick Thread");
@@ -202,6 +235,10 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		return tickThread.isAlive();
 	}
 
+	/**
+	 * Checks whether packets have to be send again due to timeout and sends them and sends
+	 * new packets out of the buffer if a packet has been acknowledged in the mean time.
+	 */
 	protected void tick() {
 		long time = System.currentTimeMillis();
 		
@@ -248,6 +285,11 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		
 	}
 	
+	/**
+	 * Initiates the connection.
+	 * @param selfInitiated true if this PacketTracker starts the connection
+	 * @return true if the router encountered no problems
+	 */
 	public boolean setupConnection(boolean selfInitiated) {
 		return setupConnection(selfInitiated, null);
 	}
@@ -319,7 +361,7 @@ public class PacketTracker extends Observable implements NetworkLayer {
 		return couldSend;
 	}
 	
-	public void endConnection(boolean selfInitiated, TraceablePacket tp) {
+	private void endConnection(boolean selfInitiated, TraceablePacket tp) {
 		if (selfInitiated) {
 			TestingTool.output("Ending connection with " + connectionAddress.toString());
 			
@@ -385,10 +427,6 @@ public class PacketTracker extends Observable implements NetworkLayer {
 	public void notifyObservers(Object arg) {
 		setChanged();
 		super.notifyObservers(arg);
-	}
-	
-	public void finalize() throws Throwable {
-		super.finalize();
 	}
 		
 	private TraceablePacket getSmallest(ArrayList<TraceablePacket> packets) {

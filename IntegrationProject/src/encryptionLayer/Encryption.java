@@ -12,7 +12,7 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * The class used for encrypting messages.
  * @author Wim Florijn
- * @version 0.1
+ * @version 2.0
  */
 
 public class Encryption {
@@ -50,6 +50,13 @@ public class Encryption {
 		this.iv = iv;
 	}
 
+	/**
+	 * Divides the plaintext in a array of byte arrays of size 8.
+	 * If the length of the plaintext is not a multiple of 8, padding will occur.
+	 * @param plaintext
+	 * @return array of byte arrays of size 8.
+	 */
+	
 	public static byte[][] dividePlainText(byte[] plaintext){
 		int length = plaintext.length;
 		int size = 0;
@@ -71,6 +78,13 @@ public class Encryption {
 		return dividedPlainText;
 	}
 
+	/**
+	 * Encrypts the plaintext with a given key using ofb mode
+	 * @param plaintext
+	 * @param key
+	 * @return plaintext encrypted with key
+	 */
+	
 	public byte[] encryptByteArray(byte[] plaintext, byte[] key) {
 		byte[] retVal = new byte [plaintext.length];
 		for (int i=0; i<plaintext.length; i++){
@@ -83,6 +97,13 @@ public class Encryption {
 		return ret;
 	}
 
+	/**
+	 * Encrypts the given plaintext and adds a nonce.
+	 * It also adds a byte indicating the amount of padding used.
+	 * @param plaintext
+	 * @return ciphertext
+	 */
+	
 	public byte[] encrypt(byte[] plaintext){
 		int randomNumber = new Random().nextInt(50);
 		while (sendIntegers.contains(randomNumber)){
@@ -113,6 +134,14 @@ public class Encryption {
 		return multiByte(newbytes);
 	}
 
+	/**
+	 * Decrypts the given ciphertext, removes the nonce, and the padding.
+	 * If a malformed packet is decripted, a MalformedCipherTextException is thrown.
+	 * @param ciphertext
+	 * @return plaintext
+	 * @throws MalformedCipherTextException
+	 */
+	
 	public String decrypt(byte[] ciphertext) throws MalformedCipherTextException {
 		try { 
 			byte[] paddingremoved = removePaddingAmount(ciphertext);
@@ -143,6 +172,13 @@ public class Encryption {
 		}
 	}
 
+	/**
+	 * Removes the padding from the ciphertext
+	 * @param paddedbytes
+	 * @param amountpadding
+	 * @return ciphertext without padding
+	 */
+	
 	public byte[] removePadding (byte[] paddedbytes, int amountpadding){
 		byte[] paddingremoved = new byte[(paddedbytes.length - amountpadding)];
 		for (int z = 0;  z < (paddedbytes.length - amountpadding); z++){
@@ -151,6 +187,12 @@ public class Encryption {
 		return paddingremoved;
 	}
 
+	/**
+	 * Removes the byte indicating the amount of padding from paddedbytes
+	 * @param paddedbytes
+	 * @return paddingremoved 
+	 */
+	
 	public byte[] removePaddingAmount(byte[] paddedbytes){
 		byte[] paddingremoved = new byte[(paddedbytes.length-1)];
 		for (int z = 1;  z < (paddedbytes.length); z++){
@@ -159,16 +201,29 @@ public class Encryption {
 		return paddingremoved;
 	}
 
+	/**
+	 * Converts a array of byte arrays into a single byte array
+	 * @param mbytes
+	 * @return byte array
+	 */
+	
 	public byte[] multiByte(byte[][] mbytes){
-		byte[] printshit = new byte[getPreviousLength(mbytes, mbytes.length)];
+		byte[] singlearray = new byte[getPreviousLength(mbytes, mbytes.length)];
 		for (int i = 0; i < mbytes.length; i++){
 			for (int j = 0; j < mbytes[i].length; j++){
-				printshit[((getPreviousLength(mbytes,i)) + j)] = mbytes[i][j];
+				singlearray[((getPreviousLength(mbytes,i)) + j)] = mbytes[i][j];
 			}
 		}
-		return printshit;
+		return singlearray;
 	}
 
+	/**
+	 * Gets the amount of bytes before a certain index (current) in the array of byte arrays
+	 * @param mbytes
+	 * @param current
+	 * @return length
+	 */
+	
 	public int getPreviousLength(byte[][] mbytes, int current){
 		int length = 0;
 		for (int i = 0; i < current; i++){
@@ -177,10 +232,25 @@ public class Encryption {
 		return length;
 	}
 
+	/**
+	 * Generates a hash of a given message and algorithm
+	 * @param message
+	 * @param algorithm
+	 * @return hash
+	 * @throws NoSuchAlgorithmException
+	 */
+	
 	public static byte[] generateHash(String message, String algorithm) throws NoSuchAlgorithmException {
 		return generateHash(message.getBytes(), algorithm);
 	}
 
+	/**
+	 * Generates a hash of a given message and algorithm
+	 * @param message
+	 * @param algorithm
+	 * @return hash
+	 * @throws NoSuchAlgorithmException
+	 */
 	public static byte[] generateHash(byte[] message, String algorithm) throws NoSuchAlgorithmException {
 		MessageDigest md = MessageDigest.getInstance(algorithm);
 		md.update(message);
@@ -226,13 +296,4 @@ public class Encryption {
 		return generateHMAC(key.getBytes(), message.getBytes(), algorithm);
 	}
 
-	/*public static void main(String[] args) {
-		Encryption ev = new Encryption();
-		for (int i = 0; i < 30 ; i++){
-			byte[] x = ev.encrypt("1234567891".getBytes());
-			System.out.println(new String(x));
-			System.out.println(ev.decrypt(x));
-		}
-
-	}*/
 }
